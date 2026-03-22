@@ -1,0 +1,89 @@
+<?php
+use Heirloom\Template;
+
+// Build a sort URL: toggles direction if already sorting by that column
+function sortUrl(string $col, string $filter, string $currentSort, string $currentDir): string {
+    $newDir = ($currentSort === $col && $currentDir === 'DESC') ? 'asc' : 'desc';
+    return '/admin?' . http_build_query(['filter' => $filter, 'sort' => $col, 'dir' => $newDir]);
+}
+
+function sortIndicator(string $col, string $currentSort, string $currentDir): string {
+    if ($currentSort !== $col) return '';
+    return $currentDir === 'ASC' ? ' &#9650;' : ' &#9660;';
+}
+?>
+
+<h1>Admin Dashboard</h1>
+<p style="color:var(--text-muted);margin-bottom:1rem;"><?= $total ?> paintings (<?= $filter ?>)</p>
+
+<div class="filter-bar">
+    <a href="/admin?filter=available" class="<?= $filter === 'available' ? 'active' : '' ?>">Available</a>
+    <a href="/admin?filter=wanted" class="<?= $filter === 'wanted' ? 'active' : '' ?>">Wanted</a>
+    <a href="/admin?filter=awarded" class="<?= $filter === 'awarded' ? 'active' : '' ?>">Awarded</a>
+    <a href="/admin?filter=all" class="<?= $filter === 'all' ? 'active' : '' ?>">All</a>
+    <a href="/admin/upload" class="btn btn-primary btn-sm" style="margin-left:auto">Upload Paintings</a>
+</div>
+
+<?php if (empty($paintings)): ?>
+    <p>No paintings found.</p>
+<?php else: ?>
+    <table class="admin-table">
+        <thead>
+            <tr>
+                <th></th>
+                <th><a href="<?= sortUrl('title', $filter, $sort, $dir) ?>" class="sort-header">Title<?= sortIndicator('title', $sort, $dir) ?></a></th>
+                <th><a href="<?= sortUrl('interest_count', $filter, $sort, $dir) ?>" class="sort-header">Interested<?= sortIndicator('interest_count', $sort, $dir) ?></a></th>
+                <th><a href="<?= sortUrl('last_interest_at', $filter, $sort, $dir) ?>" class="sort-header">Last Interest<?= sortIndicator('last_interest_at', $sort, $dir) ?></a></th>
+                <th>Status</th>
+                <th><a href="<?= sortUrl('created_at', $filter, $sort, $dir) ?>" class="sort-header">Uploaded<?= sortIndicator('created_at', $sort, $dir) ?></a></th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            <?php foreach ($paintings as $p): ?>
+                <tr>
+                    <td><img src="/uploads/<?= Template::escape($p['filename']) ?>" alt=""></td>
+                    <td><?= Template::escape($p['title']) ?></td>
+                    <td><?= $p['interest_count'] ?></td>
+                    <td style="font-size:0.8rem;color:var(--text-muted)"><?= $p['last_interest_at'] ? date('M j, g:ia', strtotime($p['last_interest_at'])) : '&mdash;' ?></td>
+                    <td>
+                        <?php if ($p['awarded_to']): ?>
+                            <span class="awarded-label">Awarded to <?= Template::escape($p['awarded_name'] ?: $p['awarded_email']) ?></span>
+                        <?php else: ?>
+                            Available
+                        <?php endif; ?>
+                    </td>
+                    <td style="font-size:0.8rem;color:var(--text-muted)"><?= date('M j, Y', strtotime($p['created_at'])) ?></td>
+                    <td>
+                        <a href="/admin/painting/<?= $p['id'] ?>" class="btn btn-sm btn-primary">Manage</a>
+                    </td>
+                </tr>
+            <?php endforeach; ?>
+        </tbody>
+    </table>
+
+    <?php if ($totalPages > 1): ?>
+        <?php $qs = http_build_query(['filter' => $filter, 'sort' => $sort, 'dir' => strtolower($dir)]); ?>
+        <div class="pagination">
+            <?php if ($page > 1): ?>
+                <a href="?<?= $qs ?>&page=<?= $page - 1 ?>">&laquo; Prev</a>
+            <?php else: ?>
+                <span class="disabled">&laquo; Prev</span>
+            <?php endif; ?>
+
+            <?php for ($i = 1; $i <= $totalPages; $i++): ?>
+                <?php if ($i === $page): ?>
+                    <span class="current"><?= $i ?></span>
+                <?php else: ?>
+                    <a href="?<?= $qs ?>&page=<?= $i ?>"><?= $i ?></a>
+                <?php endif; ?>
+            <?php endfor; ?>
+
+            <?php if ($page < $totalPages): ?>
+                <a href="?<?= $qs ?>&page=<?= $page + 1 ?>">Next &raquo;</a>
+            <?php else: ?>
+                <span class="disabled">Next &raquo;</span>
+            <?php endif; ?>
+        </div>
+    <?php endif; ?>
+<?php endif; ?>

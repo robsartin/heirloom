@@ -1,0 +1,7 @@
+suites:
+    heirloom:
+        namespace: Heirloom
+        psr4_prefix: Heirloom
+        src_path: src
+        spec_path: spec
+        spec_prefix: spec

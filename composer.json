@@ -1,0 +1,30 @@
+{
+    "name": "sartin/heirloom",
+    "description": "Painting giveaway gallery",
+    "type": "project",
+    "require": {
+        "php": ">=8.1",
+        "league/oauth2-client": "^2.7",
+        "league/oauth2-google": "^4.0",
+        "phpmailer/phpmailer": "^6.9"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^10.5",
+        "phpspec/phpspec": "^8.2"
+    },
+    "autoload": {
+        "psr-4": {
+            "Heirloom\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Heirloom\\Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "test": "phpunit",
+        "spec": "phpspec run --format=pretty",
+        "check": ["@test", "@spec"]
+    }
+}

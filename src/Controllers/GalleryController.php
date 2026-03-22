@@ -1,0 +1,129 @@
+<?php
+declare(strict_types=1);
+
+namespace Heirloom\Controllers;
+
+use Heirloom\Auth;
+use Heirloom\Database;
+use Heirloom\Template;
+
+class GalleryController
+{
+    private const PER_PAGE = 12;
+
+    public function __construct(private Database $db, private Auth $auth) {}
+
+    public function index(): void
+    {
+        $page = max(1, (int) ($_GET['page'] ?? 1));
+        $offset = ($page - 1) * self::PER_PAGE;
+
+        $total = (int) $this->db->scalar(
+            'SELECT COUNT(*) FROM paintings WHERE awarded_to IS NULL'
+        );
+        $totalPages = max(1, (int) ceil($total / self::PER_PAGE));
+        $page = min($page, $totalPages);
+        $offset = ($page - 1) * self::PER_PAGE;
+
+        $paintings = $this->db->fetchAll(
+            'SELECT p.*, (SELECT COUNT(*) FROM interests i WHERE i.painting_id = p.id) AS interest_count
+             FROM paintings p
+             WHERE p.awarded_to IS NULL
+             ORDER BY p.created_at DESC
+             LIMIT :limit OFFSET :offset',
+            [':limit' => self::PER_PAGE, ':offset' => $offset]
+        );
+
+        // Check which ones current user has expressed interest in
+        $userInterests = [];
+        if ($this->auth->isLoggedIn()) {
+            $rows = $this->db->fetchAll(
+                'SELECT painting_id FROM interests WHERE user_id = :uid',
+                [':uid' => $_SESSION['user_id']]
+            );
+            foreach ($rows as $row) {
+                $userInterests[$row['painting_id']] = true;
+            }
+        }
+
+        Template::render('gallery', [
+            'paintings' => $paintings,
+            'page' => $page,
+            'totalPages' => $totalPages,
+            'total' => $total,
+            'userInterests' => $userInterests,
+            'auth' => $this->auth,
+        ]);
+    }
+
+    public function show(string $id): void
+    {
+        $painting = $this->db->fetchOne(
+            'SELECT * FROM paintings WHERE id = :id',
+            [':id' => (int) $id]
+        );
+        if (!$painting) {
+            http_response_code(404);
+            echo '<h1>Painting not found</h1>';
+            return;
+        }
+
+        $hasInterest = false;
+        if ($this->auth->isLoggedIn()) {
+            $hasInterest = (bool) $this->db->fetchOne(
+                'SELECT 1 FROM interests WHERE painting_id = :pid AND user_id = :uid',
+                [':pid' => (int) $id, ':uid' => $_SESSION['user_id']]
+            );
+        }
+
+        $interestCount = (int) $this->db->scalar(
+            'SELECT COUNT(*) FROM interests WHERE painting_id = :pid',
+            [':pid' => (int) $id]
+        );
+
+        Template::render('painting', [
+            'painting' => $painting,
+            'hasInterest' => $hasInterest,
+            'interestCount' => $interestCount,
+            'auth' => $this->auth,
+        ]);
+    }
+
+    public function expressInterest(string $id): void
+    {
+        $this->auth->requireLogin();
+
+        $painting = $this->db->fetchOne(
+            'SELECT * FROM paintings WHERE id = :id AND awarded_to IS NULL',
+            [':id' => (int) $id]
+        );
+        if (!$painting) {
+            header('Location: /');
+            exit;
+        }
+
+        $existing = $this->db->fetchOne(
+            'SELECT 1 FROM interests WHERE painting_id = :pid AND user_id = :uid',
+            [':pid' => (int) $id, ':uid' => $_SESSION['user_id']]
+        );
+
+        $message = trim($_POST['message'] ?? '');
+
+        if ($existing) {
+            // Toggle off - remove interest
+            $this->db->execute(
+                'DELETE FROM interests WHERE painting_id = :pid AND user_id = :uid',
+                [':pid' => (int) $id, ':uid' => $_SESSION['user_id']]
+            );
+        } else {
+            $this->db->execute(
+                'INSERT INTO interests (painting_id, user_id, message) VALUES (:pid, :uid, :msg)',
+                [':pid' => (int) $id, ':uid' => $_SESSION['user_id'], ':msg' => $message]
+            );
+        }
+
+        $redirect = $_POST['redirect'] ?? '/painting/' . $id;
+        header('Location: ' . $redirect);
+        exit;
+    }
+}

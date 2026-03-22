@@ -1,0 +1,234 @@
+<?php
+declare(strict_types=1);
+
+namespace Heirloom\Controllers;
+
+use Heirloom\Auth;
+use Heirloom\Config;
+use Heirloom\Database;
+use Heirloom\Template;
+use League\OAuth2\Client\Provider\Google;
+
+class AuthController
+{
+    public function __construct(private Database $db, private Auth $auth) {}
+
+    public function loginForm(): void
+    {
+        if ($this->auth->isLoggedIn()) {
+            header('Location: /');
+            exit;
+        }
+        Template::render('login', [
+            'error' => $_SESSION['auth_error'] ?? null,
+            'success' => $_SESSION['auth_success'] ?? null,
+            'auth' => $this->auth,
+        ]);
+        unset($_SESSION['auth_error'], $_SESSION['auth_success']);
+    }
+
+    public function login(): void
+    {
+        $email = trim($_POST['email'] ?? '');
+        $password = $_POST['password'] ?? '';
+
+        if (!$email) {
+            $_SESSION['auth_error'] = 'Email is required.';
+            header('Location: /login');
+            exit;
+        }
+
+        // If password provided, attempt password login
+        if ($password !== '') {
+            $user = $this->auth->attemptPasswordLogin($email, $password);
+            if ($user) {
+                $this->auth->loginUser((int) $user['id']);
+                $redirect = $_SESSION['redirect_after_login'] ?? '/';
+                unset($_SESSION['redirect_after_login']);
+                header('Location: ' . $redirect);
+                exit;
+            }
+            $_SESSION['auth_error'] = 'Invalid email or password.';
+            header('Location: /login');
+            exit;
+        }
+
+        // No password = send magic link
+        $token = $this->auth->createMagicLink($email);
+        $sent = $this->auth->sendMagicLink($email, $token);
+
+        if ($sent) {
+            $_SESSION['auth_success'] = 'Check your email for a login link! (Expires in 1 hour)';
+        } else {
+            $_SESSION['auth_error'] = 'Failed to send login link. Please try again.';
+        }
+        header('Location: /login');
+        exit;
+    }
+
+    public function registerForm(): void
+    {
+        if ($this->auth->isLoggedIn()) {
+            header('Location: /');
+            exit;
+        }
+        Template::render('register', [
+            'error' => $_SESSION['auth_error'] ?? null,
+            'auth' => $this->auth,
+        ]);
+        unset($_SESSION['auth_error']);
+    }
+
+    public function register(): void
+    {
+        $email = strtolower(trim($_POST['email'] ?? ''));
+        $name = trim($_POST['name'] ?? '');
+
+        if (!$email || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $_SESSION['auth_error'] = 'Valid email is required.';
+            header('Location: /register');
+            exit;
+        }
+
+        if (!$name) {
+            $_SESSION['auth_error'] = 'Name is required.';
+            header('Location: /register');
+            exit;
+        }
+
+        // Create user if not exists
+        $this->auth->findOrCreateUserByEmail($email, $name);
+
+        // Send magic link
+        $token = $this->auth->createMagicLink($email);
+        $sent = $this->auth->sendMagicLink($email, $token);
+
+        if ($sent) {
+            $_SESSION['auth_success'] = 'Check your email for a login link!';
+        } else {
+            $_SESSION['auth_error'] = 'Account created but failed to send login link.';
+        }
+        header('Location: /login');
+        exit;
+    }
+
+    public function magicLogin(string $token): void
+    {
+        $email = $this->auth->consumeMagicLink($token);
+        if (!$email) {
+            $_SESSION['auth_error'] = 'Invalid or expired login link.';
+            header('Location: /login');
+            exit;
+        }
+
+        $user = $this->auth->findOrCreateUserByEmail($email);
+        $this->auth->loginUser((int) $user['id']);
+
+        // If user has no password, prompt to set one
+        if (!$user['password_hash']) {
+            header('Location: /set-password');
+            exit;
+        }
+
+        $redirect = $_SESSION['redirect_after_login'] ?? '/';
+        unset($_SESSION['redirect_after_login']);
+        header('Location: ' . $redirect);
+        exit;
+    }
+
+    public function setPasswordForm(): void
+    {
+        $this->auth->requireLogin();
+        Template::render('set-password', [
+            'auth' => $this->auth,
+            'error' => $_SESSION['auth_error'] ?? null,
+            'success' => $_SESSION['auth_success'] ?? null,
+        ]);
+        unset($_SESSION['auth_error'], $_SESSION['auth_success']);
+    }
+
+    public function setPassword(): void
+    {
+        $this->auth->requireLogin();
+        $password = $_POST['password'] ?? '';
+        $confirm = $_POST['password_confirm'] ?? '';
+
+        if (strlen($password) < 8) {
+            $_SESSION['auth_error'] = 'Password must be at least 8 characters.';
+            header('Location: /set-password');
+            exit;
+        }
+        if ($password !== $confirm) {
+            $_SESSION['auth_error'] = 'Passwords do not match.';
+            header('Location: /set-password');
+            exit;
+        }
+
+        $hash = password_hash($password, PASSWORD_DEFAULT);
+        $this->db->execute(
+            'UPDATE users SET password_hash = :hash WHERE id = :id',
+            [':hash' => $hash, ':id' => $_SESSION['user_id']]
+        );
+
+        $_SESSION['auth_success'] = 'Password set successfully!';
+        header('Location: /');
+        exit;
+    }
+
+    public function googleRedirect(): void
+    {
+        $provider = $this->getGoogleProvider();
+        $authUrl = $provider->getAuthorizationUrl(['scope' => ['email', 'profile']]);
+        $_SESSION['oauth2state'] = $provider->getState();
+        header('Location: ' . $authUrl);
+        exit;
+    }
+
+    public function googleCallback(): void
+    {
+        $provider = $this->getGoogleProvider();
+
+        if (empty($_GET['state']) || ($_GET['state'] !== ($_SESSION['oauth2state'] ?? ''))) {
+            unset($_SESSION['oauth2state']);
+            $_SESSION['auth_error'] = 'Invalid OAuth state.';
+            header('Location: /login');
+            exit;
+        }
+
+        try {
+            $token = $provider->getAccessToken('authorization_code', ['code' => $_GET['code']]);
+            $googleUser = $provider->getResourceOwner($token);
+            $email = strtolower($googleUser->getEmail());
+            $name = $googleUser->getName() ?? '';
+
+            $user = $this->auth->findOrCreateUserByEmail($email, $name);
+            $this->auth->loginUser((int) $user['id']);
+
+            $redirect = $_SESSION['redirect_after_login'] ?? '/';
+            unset($_SESSION['redirect_after_login']);
+            header('Location: ' . $redirect);
+            exit;
+        } catch (\Exception $e) {
+            error_log('OAuth error: ' . $e->getMessage());
+            $_SESSION['auth_error'] = 'Google login failed. Please try again.';
+            header('Location: /login');
+            exit;
+        }
+    }
+
+    public function logout(): void
+    {
+        $this->auth->logout();
+        header('Location: /');
+        exit;
+    }
+
+    private function getGoogleProvider(): Google
+    {
+        return new Google([
+            'clientId' => Config::get('GOOGLE_CLIENT_ID'),
+            'clientSecret' => Config::get('GOOGLE_CLIENT_SECRET'),
+            'redirectUri' => Config::get('GOOGLE_REDIRECT_URI'),
+        ]);
+    }
+}
