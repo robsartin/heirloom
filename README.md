@@ -265,4 +265,4 @@ For Gmail, you'll need an [App Password](https://myaccount.google.com/apppasswor
 
 ## License
 
-Private project.
+Apache License 2.0 — see [LICENSE](LICENSE).
