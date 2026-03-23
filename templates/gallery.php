@@ -37,7 +37,7 @@ if ($sort !== 'newest') {
             <div class="painting-card">
                 <a href="/painting/<?= $p['id'] ?>">
                     <img class="painting-card-image"
-                         src="/uploads/<?= Template::escape(Thumbnail::thumbFilename($p['filename'])) ?>"
+                         src="/uploads/<?= Template::escape(Thumbnail::thumbOrOriginal($p['filename'])) ?>"
                          alt="<?= Template::escape($p['title']) ?>"
                          loading="lazy">
                     <div class="painting-card-body">
