@@ -189,13 +189,17 @@ stateDiagram-v2
     HasInterest --> Available: User withdraws interest
     HasInterest --> HasInterest: More users express interest
 
-    HasInterest --> Awarded: Admin clicks "Award"
-    Available --> Awarded: Admin clicks "Award" (edge case)
-    Awarded --> Available: Admin clicks "Unassign"
+    HasInterest --> Awarded: Admin awards to user
+    Available --> Awarded: Admin awards to user
+    Awarded --> Shipped: Admin adds tracking number
+    Shipped --> Awarded: Admin clears tracking
+    Awarded --> Available: Admin unassigns
+    Shipped --> Available: Admin unassigns
 
     Available --> [*]: Admin deletes
     HasInterest --> [*]: Admin deletes
     Awarded --> [*]: Admin deletes
+    Shipped --> [*]: Admin deletes
 ```
 
 ## Database Schema
@@ -207,6 +211,7 @@ erDiagram
         VARCHAR email UK
         VARCHAR name
         VARCHAR password_hash
+        TEXT shipping_address
         TINYINT is_admin
         DATETIME created_at
     }
@@ -218,6 +223,8 @@ erDiagram
         VARCHAR filename
         VARCHAR original_filename
         INT awarded_to FK
+        DATETIME awarded_at
+        VARCHAR tracking_number
         DATETIME created_at
     }
 
@@ -237,9 +244,21 @@ erDiagram
         DATETIME created_at
     }
 
+    award_log {
+        INT id PK
+        INT painting_id FK
+        INT user_id FK
+        INT awarded_by FK
+        ENUM action
+        DATETIME created_at
+    }
+
     users ||--o{ interests : "expresses"
     paintings ||--o{ interests : "receives"
     users ||--o{ paintings : "awarded_to"
+    paintings ||--o{ award_log : "history"
+    users ||--o{ award_log : "recipient"
+    users ||--o{ award_log : "admin"
 ```
 
 ## Route Map
@@ -267,6 +286,8 @@ graph LR
     GET_LOGOUT["GET /logout"] --> AC8[logout]
     GET_SETPW["GET /set-password"] --> AC9[setPasswordForm]
     POST_SETPW["POST /set-password"] --> AC10[setPassword]
+    GET_PROFILE["GET /profile"] --> AC11[profileForm]
+    POST_PROFILE["POST /profile"] --> AC12[updateProfile]
 ```
 
 ### Admin Routes (AdminController)
@@ -279,7 +300,8 @@ graph LR
     GET_MANAGE["GET /admin/painting/id"] --> AD4[managePainting]
     POST_EDIT["POST /admin/painting/id/edit"] --> AD5[edit]
     POST_AWARD["POST /admin/painting/id/award"] --> AD6[award]
-    POST_DELETE["POST /admin/painting/id/delete"] --> AD7[delete]
+    POST_TRACK["POST /admin/painting/id/tracking"] --> AD7[updateTracking]
+    POST_DELETE["POST /admin/painting/id/delete"] --> AD8[delete]
 ```
 
 ## Project Structure
@@ -300,8 +322,8 @@ heirloom/
 │   ├── Template.php            View renderer with XSS escaping
 │   └── Controllers/
 │       ├── GalleryController   Public gallery, painting detail, interest toggle
-│       ├── AuthController      Login, register, magic link, Google OAuth, password
-│       └── AdminController     Dashboard, upload, edit, award, delete
+│       ├── AuthController      Login, register, magic link, Google OAuth, profile
+│       └── AdminController     Dashboard, upload, edit, award, tracking, delete
 ├── templates/                  PHP view templates
 ├── tests/                      PHPUnit test suite
 ├── spec/                       PHPSpec behavioral specifications

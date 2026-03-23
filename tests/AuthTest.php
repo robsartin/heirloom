@@ -82,6 +82,16 @@ class AuthTest extends TestCase
         $this->assertSame('test@example.com', Auth::normalizeEmail('  TEST@EXAMPLE.COM  '));
     }
 
+    public function testNormalizeEmailHandlesEmptyString(): void
+    {
+        $this->assertSame('', Auth::normalizeEmail(''));
+    }
+
+    public function testNormalizeEmailHandlesAlreadyNormalized(): void
+    {
+        $this->assertSame('already@normal.com', Auth::normalizeEmail('already@normal.com'));
+    }
+
     // --- consumeRedirect ---
 
     public function testConsumeRedirectReturnsStoredPath(): void
@@ -100,6 +110,18 @@ class AuthTest extends TestCase
     {
         $_SESSION['redirect_after_login'] = '//evil.com/steal';
         $this->assertSame('/', $this->auth->consumeRedirect());
+    }
+
+    public function testConsumeRedirectRejectsNonPathUrl(): void
+    {
+        $_SESSION['redirect_after_login'] = 'https://evil.com';
+        $this->assertSame('/', $this->auth->consumeRedirect());
+    }
+
+    public function testConsumeRedirectAcceptsQueryString(): void
+    {
+        $_SESSION['redirect_after_login'] = '/admin?filter=wanted&page=2';
+        $this->assertSame('/admin?filter=wanted&page=2', $this->auth->consumeRedirect());
     }
 
     // --- user caching ---

@@ -4,35 +4,26 @@ Heirloom Gallery is a site where paintings are available to claim. Browse the ga
 
 ## Creating an Account
 
-You have three ways to create an account:
-
-### Option 1: Sign up with Google
-
-1. Go to the **Register** page
-2. Click **Sign up with Google**
-3. Choose your Google account and authorize access
-4. You're in — your account is created using your Google email and name
-
-### Option 2: Register with email (magic link)
+Registration uses a magic link sent to your email. This verifies you own the email address and creates your account in one step.
 
 1. Go to the **Register** page
 2. Enter your **name** and **email address**
 3. Click **Register**
 4. Check your email inbox for a message from Heirloom Gallery
 5. Click the **login link** in the email
-6. You'll be logged in and prompted to set a password (optional but recommended)
+6. You're logged in and prompted to set a password (optional but recommended)
 
-The email login link:
+### About the email login link
+
 - Arrives within a few minutes (check your spam folder if you don't see it)
 - Expires after **1 hour**
 - Can only be used **once** — clicking it a second time will show "Invalid or expired login link"
 - Is unique to your email address — it cannot be used by anyone else
+- Contains a cryptographically random token (64 hex characters) that is marked as used after your first click
 
-### Option 3: Set a password after first login
+### Setting a password
 
-After logging in via a magic link or Google for the first time, you'll be prompted to set a password. This is optional but lets you log in faster next time without waiting for an email.
-
-Passwords must be at least 8 characters.
+After your first login via magic link, you'll be prompted to set a password. This is optional but lets you log in faster next time without waiting for an email. Passwords must be at least 8 characters.
 
 ## Logging In
 
@@ -42,11 +33,13 @@ Passwords must be at least 8 characters.
 2. Enter your email and password
 3. Click **Log In**
 
-### With Google
+### With Google (existing accounts only)
 
 1. Go to the **Log In** page
 2. Click **Sign in with Google**
 3. Choose your Google account
+
+Google login only works if you've already registered. If there's no account matching your Google email, you'll be redirected to the registration page.
 
 ### With a magic link (no password needed)
 
@@ -57,10 +50,24 @@ Passwords must be at least 8 characters.
 
 This is useful if you forgot your password or never set one.
 
+## Your Profile
+
+Click **Profile** in the navigation bar to manage your account.
+
+### Shipping address
+
+Enter your shipping address so the site owner knows where to send paintings you're awarded. This is visible to the admin when they're deciding who to award a painting to — having an address on file may help.
+
+You can update your address at any time.
+
+### Changing your password
+
+From the profile page, click **Change password** to update your login password.
+
 ## Browsing Paintings
 
 The home page shows all available paintings in a grid. Each painting shows:
-- A thumbnail image
+- A thumbnail image (aspect ratio preserved)
 - The painting's title
 - How many people have expressed interest
 
@@ -73,7 +80,7 @@ Click any painting to see it full-size with more details.
 When you find a painting you'd like to have:
 
 1. Click the painting to view its detail page
-2. Optionally write a message explaining why you want it (the site owner reads these)
+2. Optionally write a message explaining why you want it (the site owner reads these when deciding)
 3. Click **I want this painting**
 
 You can express interest in as many paintings as you like.
@@ -84,7 +91,10 @@ To withdraw your interest, go to the painting's detail page and click **Withdraw
 
 ### What happens next
 
-The site owner reviews who wants each painting and picks one person to receive it. Once a painting is awarded, it disappears from the gallery. The site owner will contact the chosen recipient by email to arrange delivery.
+The site owner reviews who wants each painting and picks one person to receive it. Once a painting is awarded:
+- It disappears from the public gallery
+- The site owner will arrange shipping using your address on file
+- You may receive a tracking number once the painting is shipped
 
 ---
 
@@ -158,22 +168,39 @@ The title and description fields are editable. Change them and click **Save Chan
 
 A list shows everyone who expressed interest, including:
 - Their name and email
+- Whether they have a shipping address on file
 - Their message (if they wrote one)
-- When they expressed interest
 
 ### Award a painting
 
 Click the **Award** button next to the user you want to give it to. You'll be asked to confirm. Once awarded:
 - The painting disappears from the public gallery
 - It moves to the "Awarded" filter on the dashboard
-- The recipient's name appears in the status column
+- The recipient's name, email, and shipping address are displayed
+- The award is logged with a timestamp and who made the decision
 
-You'll need to contact the recipient directly (via their email shown on the manage page) to arrange delivery.
+### Shipping and tracking
+
+After awarding a painting:
+1. Check the recipient's **shipping address** (shown on the manage page)
+2. If no address is on file, contact them via email to get one
+3. After shipping, enter the **tracking number** and click **Save Tracking**
+
+### Award history
+
+Every award and unassign action is logged. The **Award History** table at the bottom of the manage page shows:
+- What action was taken (awarded or unassigned)
+- Which user was affected
+- Which admin performed the action
+- When it happened
 
 ### Unassign a painting
 
-If you change your mind after awarding, click **Unassign** to return it to the available pool.
+If you change your mind after awarding, click **Unassign**. This:
+- Returns the painting to the available pool
+- Clears the tracking number
+- Logs the unassign action in the award history
 
 ### Delete a painting
 
-Click **Delete Painting** to permanently remove it. This deletes the image file and all interest records. This cannot be undone.
+Click **Delete Painting** to permanently remove it. This deletes the image file, all interest records, and the award history. This cannot be undone.
