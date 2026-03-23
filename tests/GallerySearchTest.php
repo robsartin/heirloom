@@ -7,6 +7,7 @@ use Heirloom\Auth;
 use Heirloom\Controllers\GalleryController;
 use Heirloom\Database;
 use Heirloom\SiteSettings;
+use Heirloom\Template;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -29,8 +30,14 @@ class GallerySearchTest extends TestCase
         $this->settings = $this->createMock(SiteSettings::class);
 
         $this->settings->method('getInt')->willReturn(12);
+        $this->settings->method('get')->willReturn(SiteSettings::DEFAULT_SITE_NAME);
         $this->auth->method('isLoggedIn')->willReturn(true);
         $this->auth->method('userId')->willReturn(1);
+        $this->auth->method('user')->willReturn(['id' => 1, 'name' => 'Test', 'email' => 'test@example.com', 'is_admin' => 0]);
+        $this->auth->method('isAdmin')->willReturn(false);
+
+        Template::setGlobal('siteName', SiteSettings::DEFAULT_SITE_NAME);
+        Template::setGlobal('contactEmail', '');
     }
 
     // ---------------------------------------------------------------
