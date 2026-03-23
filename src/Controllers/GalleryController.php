@@ -15,6 +15,11 @@ class GalleryController
 
     public function index(): void
     {
+        if (!$this->auth->isLoggedIn()) {
+            Template::render('landing', ['auth' => $this->auth]);
+            return;
+        }
+
         $perPage = $this->settings->getInt('gallery_per_page', 12);
         $page = max(1, (int) ($_GET['page'] ?? 1));
         $search = trim($_GET['q'] ?? '');
@@ -80,6 +85,8 @@ class GalleryController
 
     public function show(string $id): void
     {
+        $this->auth->requireLogin();
+
         $painting = $this->db->fetchOne(
             'SELECT * FROM paintings WHERE id = :id',
             [':id' => (int) $id]
