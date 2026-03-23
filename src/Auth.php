@@ -336,6 +336,14 @@ HTML;
     }
 
     /**
+     * Send an invitation email with a magic link.
+     */
+    public function sendInvite(string $email, string $token): bool
+    {
+        return $this->sendEmail($this->buildInviteEmail($email, $token));
+    }
+
+    /**
      * Build an invitation email with a magic link for a new or existing user.
      */
     public function buildInviteEmail(string $email, string $token): EmailMessage

@@ -522,9 +522,8 @@ class AdminController
             'auth' => $this->auth,
             'success' => $_SESSION['admin_success'] ?? null,
             'error' => $_SESSION['admin_error'] ?? null,
-            'inviteEmail' => $_SESSION['invite_email'] ?? null,
         ]);
-        unset($_SESSION['admin_success'], $_SESSION['admin_error'], $_SESSION['invite_email']);
+        unset($_SESSION['admin_success'], $_SESSION['admin_error']);
     }
 
     public function invite(): void
@@ -541,15 +540,13 @@ class AdminController
         }
 
         $token = $this->auth->createInvite($email, $name);
-        $emailMessage = $this->auth->buildInviteEmail($email, $token);
+        $sent = $this->auth->sendInvite($email, $token);
 
-        $_SESSION['admin_success'] = 'Invite created for ' . $email;
-        $_SESSION['invite_email'] = [
-            'to' => $emailMessage->to,
-            'subject' => $emailMessage->subject,
-            'htmlBody' => $emailMessage->htmlBody,
-            'textBody' => $emailMessage->textBody,
-        ];
+        if ($sent) {
+            $_SESSION['admin_success'] = "Invitation sent to $email.";
+        } else {
+            $_SESSION['admin_error'] = "Invite created but failed to send email to $email. Check mail configuration.";
+        }
         header('Location: /admin/invite');
         exit;
     }

@@ -118,4 +118,16 @@ class AdminInviteTest extends TestCase
         $user = $this->auth->findUserByEmail('existing@example.com');
         $this->assertSame('Existing', $user['name']); // doesn't overwrite
     }
+
+    public function testSendInviteReturnsTrueAndSendsEmail(): void
+    {
+        $token = $this->auth->createInvite('sender@example.com', 'Sender');
+        $result = $this->auth->sendInvite('sender@example.com', $token);
+
+        $this->assertTrue($result);
+        $msg = $this->mailer->getLastMessage();
+        $this->assertNotNull($msg);
+        $this->assertSame('sender@example.com', $msg->to);
+        $this->assertStringContainsString('invited', strtolower($msg->subject));
+    }
 }
