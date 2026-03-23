@@ -33,6 +33,10 @@ class Router
         }
 
         http_response_code(404);
-        echo '<h1>404 Not Found</h1>';
+        Template::render('error', [
+            'code' => 404,
+            'message' => 'The page you requested could not be found.',
+            'noLayout' => true,
+        ]);
     }
 }
