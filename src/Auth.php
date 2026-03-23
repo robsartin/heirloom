@@ -165,7 +165,7 @@ class Auth
 
     public function consumeMagicLink(string $token): ?string
     {
-        $minutes = $this->magicLinkExpiryMinutes();
+        $minutes = (int) $this->magicLinkExpiryMinutes();
         $link = $this->db->fetchOne(
             "SELECT * FROM magic_links WHERE token = :token AND used = 0 AND created_at > DATE_SUB(NOW(), INTERVAL $minutes MINUTE)",
             [':token' => $token]
