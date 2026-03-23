@@ -87,6 +87,8 @@ $router->post('/admin/painting/{id}/edit', [$admin, 'edit']);
 $router->post('/admin/painting/{id}/award', [$admin, 'award']);
 $router->post('/admin/painting/{id}/tracking', [$admin, 'updateTracking']);
 $router->post('/admin/painting/{id}/delete', [$admin, 'delete']);
+$router->get('/admin/export/paintings', [$admin, 'exportPaintings']);
+$router->get('/admin/export/users', [$admin, 'exportUsers']);
 $router->get('/admin/settings', [$admin, 'settingsForm']);
 $router->post('/admin/settings', [$admin, 'updateSettings']);
 

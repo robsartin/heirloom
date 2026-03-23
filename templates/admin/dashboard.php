@@ -20,7 +20,9 @@ $sortIndicator = function (string $col) use ($sort, $dir): string {
     <a href="/admin?filter=wanted" class="<?= $filter === 'wanted' ? 'active' : '' ?>">Wanted</a>
     <a href="/admin?filter=awarded" class="<?= $filter === 'awarded' ? 'active' : '' ?>">Awarded</a>
     <a href="/admin?filter=all" class="<?= $filter === 'all' ? 'active' : '' ?>">All</a>
-    <a href="/admin/upload" class="btn btn-primary btn-sm" style="margin-left:auto">Upload Paintings</a>
+    <a href="/admin/export/paintings" class="btn btn-sm" style="margin-left:auto">Export Paintings CSV</a>
+    <a href="/admin/export/users" class="btn btn-sm">Export Users CSV</a>
+    <a href="/admin/upload" class="btn btn-primary btn-sm">Upload Paintings</a>
 </div>
 
 <?php if (empty($paintings)): ?>

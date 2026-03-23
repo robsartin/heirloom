@@ -327,6 +327,127 @@ class AdminController
         exit;
     }
 
+    // ---------------------------------------------------------------
+    // CSV exports
+    // ---------------------------------------------------------------
+
+    /** Return the header row for the paintings CSV. */
+    public static function paintingsCsvHeader(): array
+    {
+        return [
+            'ID',
+            'Title',
+            'Description',
+            'Filename',
+            'Interest Count',
+            'Awarded To Name',
+            'Awarded To Email',
+            'Awarded At',
+            'Tracking Number',
+            'Created At',
+        ];
+    }
+
+    /** Query all paintings with interest count and awarded-user info. */
+    public static function paintingsCsvRows(Database $db): array
+    {
+        return $db->fetchAll(
+            "SELECT p.id, p.title, p.description, p.filename,
+                    (SELECT COUNT(*) FROM interests i WHERE i.painting_id = p.id) AS interest_count,
+                    u.name AS awarded_name, u.email AS awarded_email,
+                    p.awarded_at, p.tracking_number, p.created_at
+             FROM paintings p
+             LEFT JOIN users u ON u.id = p.awarded_to
+             ORDER BY p.id"
+        );
+    }
+
+    /** Stream paintings CSV to the browser. */
+    public function exportPaintings(): void
+    {
+        $this->auth->requireAdmin();
+
+        header('Content-Type: text/csv; charset=utf-8');
+        header('Content-Disposition: attachment; filename="paintings_' . date('Y-m-d') . '.csv"');
+
+        $out = fopen('php://output', 'w');
+        fputcsv($out, self::paintingsCsvHeader());
+
+        foreach (self::paintingsCsvRows($this->db) as $row) {
+            fputcsv($out, [
+                $row['id'],
+                $row['title'],
+                $row['description'],
+                $row['filename'],
+                $row['interest_count'],
+                $row['awarded_name'] ?? '',
+                $row['awarded_email'] ?? '',
+                $row['awarded_at'] ?? '',
+                $row['tracking_number'] ?? '',
+                $row['created_at'],
+            ]);
+        }
+
+        fclose($out);
+        exit;
+    }
+
+    /** Return the header row for the users CSV. */
+    public static function usersCsvHeader(): array
+    {
+        return [
+            'ID',
+            'Email',
+            'Name',
+            'Shipping Address',
+            'Interest Count',
+            'Awarded Painting Count',
+            'Is Admin',
+            'Created At',
+        ];
+    }
+
+    /** Query all users with interest count and awarded painting count. */
+    public static function usersCsvRows(Database $db): array
+    {
+        return $db->fetchAll(
+            "SELECT u.id, u.email, u.name, u.shipping_address,
+                    (SELECT COUNT(*) FROM interests i WHERE i.user_id = u.id) AS interest_count,
+                    (SELECT COUNT(*) FROM paintings p WHERE p.awarded_to = u.id) AS awarded_count,
+                    u.is_admin, u.created_at
+             FROM users u
+             ORDER BY u.id"
+        );
+    }
+
+    /** Stream users CSV to the browser. */
+    public function exportUsers(): void
+    {
+        $this->auth->requireAdmin();
+
+        header('Content-Type: text/csv; charset=utf-8');
+        header('Content-Disposition: attachment; filename="users_' . date('Y-m-d') . '.csv"');
+
+        $out = fopen('php://output', 'w');
+        fputcsv($out, self::usersCsvHeader());
+
+        foreach (self::usersCsvRows($this->db) as $row) {
+            fputcsv($out, [
+                $row['id'],
+                $row['email'],
+                $row['name'],
+                $row['shipping_address'] ?? '',
+                $row['interest_count'],
+                $row['awarded_count'],
+                $row['is_admin'] ? 'Yes' : 'No',
+                $row['created_at'],
+            ]);
+        }
+
+        fclose($out);
+        exit;
+    }
+
     public function settingsForm(): void
     {
         $this->auth->requireAdmin();
