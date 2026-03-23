@@ -13,6 +13,11 @@ class Template
         self::$globals[$key] = $value;
     }
 
+    public static function getGlobals(): array
+    {
+        return self::$globals;
+    }
+
     public static function render(string $template, array $data = []): void
     {
         $data = array_merge(self::$globals, $data);
