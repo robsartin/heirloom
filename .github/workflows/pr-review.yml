@@ -11,33 +11,29 @@ permissions:
 jobs:
   review:
     runs-on: ubuntu-latest
-    if: github.actor != 'robsartin'
 
     steps:
+      - name: Skip owner PRs
+        if: github.actor == 'robsartin'
+        run: echo "Skipping review for repository owner"
+
       - uses: actions/checkout@v4
+        if: github.actor != 'robsartin'
         with:
           fetch-depth: 0
 
       - name: Get PR diff
+        if: github.actor != 'robsartin'
         id: diff
         run: |
           DIFF=$(gh pr diff ${{ github.event.pull_request.number }} --repo ${{ github.repository }})
-          # Truncate to 100k chars to stay within API limits
           DIFF="${DIFF:0:100000}"
-          # Write to file to avoid shell escaping issues
           echo "$DIFF" > /tmp/pr_diff.txt
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Get PR info
-        id: pr_info
-        run: |
-          echo "title=${{ github.event.pull_request.title }}" >> $GITHUB_OUTPUT
-          echo "body<<GHEOF" >> $GITHUB_OUTPUT
-          echo "${{ github.event.pull_request.body }}" >> $GITHUB_OUTPUT
-          echo "GHEOF" >> $GITHUB_OUTPUT
-
       - name: Review with Claude
+        if: github.actor != 'robsartin'
         id: review
         run: |
           DIFF=$(cat /tmp/pr_diff.txt)
@@ -59,23 +55,21 @@ jobs:
               }')" \
           )
 
-          # Extract the text content
           BODY=$(echo "$REVIEW" | jq -r '.content[0].text // "Review failed: could not parse response"')
 
-          # Determine review event
           if echo "$BODY" | grep -qi "REQUEST_CHANGES"; then
             EVENT="REQUEST_CHANGES"
           else
             EVENT="APPROVE"
           fi
 
-          # Write to file to preserve formatting
           echo "$BODY" > /tmp/review_body.txt
           echo "event=$EVENT" >> $GITHUB_OUTPUT
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
 
       - name: Post review
+        if: github.actor != 'robsartin'
         run: |
           BODY=$(cat /tmp/review_body.txt)
           EVENT=${{ steps.review.outputs.event }}
