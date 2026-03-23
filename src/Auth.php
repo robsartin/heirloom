@@ -7,6 +7,9 @@ use PHPMailer\PHPMailer\PHPMailer;
 
 class Auth
 {
+    private ?array $cachedUser = null;
+    private bool $userFetched = false;
+
     public function __construct(private Database $db) {}
 
     public function user(): ?array
@@ -14,10 +17,19 @@ class Auth
         if (!isset($_SESSION['user_id'])) {
             return null;
         }
-        return $this->db->fetchOne(
-            'SELECT * FROM users WHERE id = :id',
-            [':id' => $_SESSION['user_id']]
-        );
+        if (!$this->userFetched) {
+            $this->cachedUser = $this->db->fetchOne(
+                'SELECT * FROM users WHERE id = :id',
+                [':id' => $_SESSION['user_id']]
+            );
+            $this->userFetched = true;
+        }
+        return $this->cachedUser;
+    }
+
+    public function userId(): ?int
+    {
+        return isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : null;
     }
 
     public function isLoggedIn(): bool
@@ -53,7 +65,19 @@ class Auth
     public function loginUser(int $userId): void
     {
         $_SESSION['user_id'] = $userId;
+        $this->cachedUser = null;
+        $this->userFetched = false;
         session_regenerate_id(true);
+    }
+
+    public function consumeRedirect(): string
+    {
+        $redirect = $_SESSION['redirect_after_login'] ?? '/';
+        unset($_SESSION['redirect_after_login']);
+        if (!str_starts_with($redirect, '/') || str_starts_with($redirect, '//')) {
+            return '/';
+        }
+        return $redirect;
     }
 
     public function logout(): void
@@ -61,11 +85,16 @@ class Auth
         session_destroy();
     }
 
+    public static function normalizeEmail(string $email): string
+    {
+        return strtolower(trim($email));
+    }
+
     public function attemptPasswordLogin(string $email, string $password): ?array
     {
         $user = $this->db->fetchOne(
             'SELECT * FROM users WHERE email = :email',
-            [':email' => strtolower(trim($email))]
+            [':email' => self::normalizeEmail($email)]
         );
         if (!$user || !$user['password_hash']) {
             return null;
@@ -78,7 +107,7 @@ class Auth
 
     public function findOrCreateUserByEmail(string $email, string $name = ''): array
     {
-        $email = strtolower(trim($email));
+        $email = self::normalizeEmail($email);
         $user = $this->db->fetchOne(
             'SELECT * FROM users WHERE email = :email',
             [':email' => $email]
@@ -101,7 +130,7 @@ class Auth
         $token = bin2hex(random_bytes(32));
         $this->db->execute(
             'INSERT INTO magic_links (email, token) VALUES (:email, :token)',
-            [':email' => strtolower(trim($email)), ':token' => $token]
+            [':email' => self::normalizeEmail($email), ':token' => $token]
         );
         return $token;
     }

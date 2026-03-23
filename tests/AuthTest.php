@@ -62,6 +62,62 @@ class AuthTest extends TestCase
         $this->assertTrue($this->auth->isLoggedIn());
     }
 
+    // --- userId ---
+
+    public function testUserIdReturnsNullWhenNotLoggedIn(): void
+    {
+        $this->assertNull($this->auth->userId());
+    }
+
+    public function testUserIdReturnsIntWhenLoggedIn(): void
+    {
+        $_SESSION['user_id'] = 42;
+        $this->assertSame(42, $this->auth->userId());
+    }
+
+    // --- normalizeEmail ---
+
+    public function testNormalizeEmailLowercasesAndTrims(): void
+    {
+        $this->assertSame('test@example.com', Auth::normalizeEmail('  TEST@EXAMPLE.COM  '));
+    }
+
+    // --- consumeRedirect ---
+
+    public function testConsumeRedirectReturnsStoredPath(): void
+    {
+        $_SESSION['redirect_after_login'] = '/painting/5';
+        $this->assertSame('/painting/5', $this->auth->consumeRedirect());
+        $this->assertArrayNotHasKey('redirect_after_login', $_SESSION);
+    }
+
+    public function testConsumeRedirectDefaultsToSlash(): void
+    {
+        $this->assertSame('/', $this->auth->consumeRedirect());
+    }
+
+    public function testConsumeRedirectRejectsExternalUrl(): void
+    {
+        $_SESSION['redirect_after_login'] = '//evil.com/steal';
+        $this->assertSame('/', $this->auth->consumeRedirect());
+    }
+
+    // --- user caching ---
+
+    public function testUserResultIsCached(): void
+    {
+        $this->db->execute(
+            "INSERT INTO users (email, name, is_admin) VALUES (:e, :n, 0)",
+            [':e' => 'cached@example.com', ':n' => 'Cached']
+        );
+        $id = $this->db->lastInsertId();
+        $_SESSION['user_id'] = $id;
+
+        $user1 = $this->auth->user();
+        $user2 = $this->auth->user();
+        $this->assertSame($user1, $user2);
+    }
+
     // --- user ---
 
     public function testUserReturnsNullWhenNotLoggedIn(): void

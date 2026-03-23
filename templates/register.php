@@ -2,7 +2,7 @@
     <h1>Create Account</h1>
 
     <?php if (!empty($error)): ?>
-        <div class="alert alert-error"><?= htmlspecialchars($error) ?></div>
+        <div class="alert alert-error"><?= \Heirloom\Template::escape($error) ?></div>
     <?php endif; ?>
 
     <div class="form-card">

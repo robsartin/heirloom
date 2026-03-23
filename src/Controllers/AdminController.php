@@ -32,7 +32,7 @@ class AdminController
 
         $where = match ($filter) {
             'awarded' => 'WHERE p.awarded_to IS NOT NULL',
-            'wanted' => 'WHERE p.awarded_to IS NULL AND (SELECT COUNT(*) FROM interests i2 WHERE i2.painting_id = p.id) > 0',
+            'wanted' => 'WHERE p.awarded_to IS NULL AND EXISTS (SELECT 1 FROM interests i2 WHERE i2.painting_id = p.id)',
             'all' => '',
             default => 'WHERE p.awarded_to IS NULL',
         };
@@ -188,8 +188,9 @@ class AdminController
             'interests' => $interests,
             'auth' => $this->auth,
             'success' => $_SESSION['admin_success'] ?? null,
+            'error' => $_SESSION['admin_error'] ?? null,
         ]);
-        unset($_SESSION['admin_success']);
+        unset($_SESSION['admin_success'], $_SESSION['admin_error']);
     }
 
     public function edit(string $id): void
@@ -200,7 +201,7 @@ class AdminController
         $description = trim($_POST['description'] ?? '');
 
         if ($title === '') {
-            $_SESSION['admin_success'] = 'Title cannot be empty.';
+            $_SESSION['admin_error'] = 'Title cannot be empty.';
             header('Location: /admin/painting/' . $id);
             exit;
         }
@@ -237,15 +238,12 @@ class AdminController
         $this->auth->requireAdmin();
 
         $painting = $this->db->fetchOne(
-            'SELECT * FROM paintings WHERE id = :id',
+            'SELECT filename FROM paintings WHERE id = :id',
             [':id' => (int) $id]
         );
 
         if ($painting) {
-            $filepath = dirname(__DIR__, 2) . '/public/uploads/' . $painting['filename'];
-            if (file_exists($filepath)) {
-                unlink($filepath);
-            }
+            @unlink(dirname(__DIR__, 2) . '/public/uploads/' . $painting['filename']);
             $this->db->execute('DELETE FROM paintings WHERE id = :id', [':id' => (int) $id]);
         }
 
