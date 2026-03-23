@@ -29,7 +29,8 @@ class GallerySearchTest extends TestCase
         $this->settings = $this->createMock(SiteSettings::class);
 
         $this->settings->method('getInt')->willReturn(12);
-        $this->auth->method('isLoggedIn')->willReturn(false);
+        $this->auth->method('isLoggedIn')->willReturn(true);
+        $this->auth->method('userId')->willReturn(1);
     }
 
     // ---------------------------------------------------------------
