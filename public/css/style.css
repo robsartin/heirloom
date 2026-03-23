@@ -260,6 +260,8 @@ main {
 .form-group input[type="text"],
 .form-group input[type="email"],
 .form-group input[type="password"],
+.form-group input[type="number"],
+.form-group select,
 .form-group textarea {
     width: 100%;
     padding: 0.5rem;
@@ -453,6 +455,74 @@ main {
     padding: 0.15rem 0.5rem;
     border-radius: 3px;
     font-size: 0.8rem;
+}
+
+/* Settings */
+.settings-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1.5rem;
+}
+
+.settings-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.25rem;
+}
+
+.settings-card-title {
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border);
+    color: var(--accent);
+}
+
+.settings-field {
+    margin-bottom: 1.25rem;
+}
+
+.settings-field:last-child {
+    margin-bottom: 0;
+}
+
+.settings-field label {
+    display: block;
+    font-size: 0.9rem;
+    font-weight: bold;
+    margin-bottom: 0.3rem;
+}
+
+.settings-field input[type="text"],
+.settings-field input[type="number"] {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    font-size: 0.95rem;
+    font-family: inherit;
+}
+
+.settings-input-short {
+    max-width: 120px;
+}
+
+.settings-field select {
+    padding: 0.45rem 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    font-size: 0.95rem;
+    font-family: inherit;
+    background: var(--surface);
+    cursor: pointer;
+}
+
+.settings-desc {
+    margin-top: 0.25rem;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    line-height: 1.4;
 }
 
 /* Footer */
