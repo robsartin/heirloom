@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Heirloom\Controllers;
 
 use Heirloom\Auth;
+use Heirloom\Config;
 use Heirloom\Database;
 use Heirloom\SiteSettings;
 use Heirloom\Template;
@@ -147,6 +148,44 @@ class GalleryController
         }
         header('Location: ' . $redirect);
         exit;
+    }
+
+    public function sitemapXml(): void
+    {
+        $appUrl = rtrim(Config::get('APP_URL', 'http://localhost:8080'), '/');
+
+        $paintings = $this->db->fetchAll(
+            'SELECT id, updated_at FROM paintings WHERE awarded_to IS NULL ORDER BY created_at DESC'
+        );
+
+        header('Content-Type: text/xml; charset=UTF-8');
+
+        $xml = '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
+        $xml .= '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' . "\n";
+
+        // Gallery home page
+        $xml .= "  <url>\n";
+        $xml .= '    <loc>' . htmlspecialchars($appUrl . '/') . "</loc>\n";
+        $xml .= "    <changefreq>daily</changefreq>\n";
+        $xml .= "    <priority>1.0</priority>\n";
+        $xml .= "  </url>\n";
+
+        // Individual painting pages
+        foreach ($paintings as $painting) {
+            $loc = $appUrl . '/painting/' . $painting['id'];
+            $xml .= "  <url>\n";
+            $xml .= '    <loc>' . htmlspecialchars($loc) . "</loc>\n";
+            if (!empty($painting['updated_at'])) {
+                $xml .= '    <lastmod>' . date('Y-m-d', strtotime($painting['updated_at'])) . "</lastmod>\n";
+            }
+            $xml .= "    <changefreq>weekly</changefreq>\n";
+            $xml .= "    <priority>0.8</priority>\n";
+            $xml .= "  </url>\n";
+        }
+
+        $xml .= "</urlset>\n";
+
+        echo $xml;
     }
 
     public function myPaintings(): void
