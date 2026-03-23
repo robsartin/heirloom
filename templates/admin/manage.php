@@ -19,6 +19,7 @@
         <?php endif; ?>
 
         <form method="POST" action="/admin/painting/<?= $painting['id'] ?>/edit" style="margin-bottom:1.5rem;">
+            <?= \Heirloom\Csrf::hiddenField() ?>
             <div class="form-group">
                 <label for="title">Title</label>
                 <input type="text" name="title" id="title" required
@@ -56,6 +57,7 @@
                 <?php endif; ?>
 
                 <form method="POST" action="/admin/painting/<?= $painting['id'] ?>/tracking" style="margin-top:0.75rem;">
+            <?= \Heirloom\Csrf::hiddenField() ?>
                     <div class="form-group" style="margin-bottom:0.5rem;">
                         <label for="tracking_number" style="font-size:0.85rem;">Tracking Number</label>
                         <input type="text" name="tracking_number" id="tracking_number"
@@ -66,6 +68,7 @@
                 </form>
 
                 <form method="POST" action="/admin/painting/<?= $painting['id'] ?>/award" style="margin-top:0.75rem;">
+            <?= \Heirloom\Csrf::hiddenField() ?>
                     <input type="hidden" name="user_id" value="">
                     <button type="submit" class="btn btn-sm btn-danger"
                             onclick="return confirm('Unassign this painting? This clears tracking info too.')">
@@ -97,6 +100,7 @@
                         </div>
                         <?php if (!$painting['awarded_to']): ?>
                             <form method="POST" action="/admin/painting/<?= $painting['id'] ?>/award">
+            <?= \Heirloom\Csrf::hiddenField() ?>
                                 <input type="hidden" name="user_id" value="<?= $interest['user_id'] ?>">
                                 <button type="submit" class="btn btn-sm btn-success"
                                         onclick="return confirm('Award this painting to <?= Template::escape($interest['name'] ?: $interest['email']) ?>?')">
@@ -136,6 +140,7 @@
         <form method="POST" action="/admin/painting/<?= $painting['id'] ?>/delete"
               style="margin-top:2rem;"
               onsubmit="return confirm('Delete this painting permanently?')">
+            <?= \Heirloom\Csrf::hiddenField() ?>
             <button type="submit" class="btn btn-danger btn-sm">Delete Painting</button>
         </form>
     </div>

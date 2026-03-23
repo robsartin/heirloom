@@ -10,6 +10,7 @@
 
         <div class="form-card">
             <form method="POST" action="/register">
+            <?= \Heirloom\Csrf::hiddenField() ?>
                 <div class="form-group">
                     <label for="name">Your Name</label>
                     <input type="text" name="name" id="name" required placeholder="Jane Smith">

@@ -19,6 +19,7 @@
             <p><span class="awarded-label">This painting has been claimed</span></p>
         <?php elseif ($auth->isLoggedIn()): ?>
             <form method="POST" action="/painting/<?= $painting['id'] ?>/interest">
+            <?= \Heirloom\Csrf::hiddenField() ?>
                 <?php if (!$hasInterest): ?>
                     <div class="form-group">
                         <label for="message">Why do you want this painting? (optional)</label>

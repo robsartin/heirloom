@@ -11,6 +11,7 @@
 
     <div class="form-card">
         <form method="POST" action="/admin/upload" enctype="multipart/form-data">
+            <?= \Heirloom\Csrf::hiddenField() ?>
             <div class="form-group">
                 <label for="title">Title</label>
                 <input type="text" name="title" id="title" placeholder="Painting title">
