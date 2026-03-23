@@ -14,6 +14,7 @@
                 <?php if ($auth && $auth->isLoggedIn()): ?>
                     <?php $user = $auth->user(); ?>
                     <span class="nav-user"><?= \Heirloom\Template::escape($user['name'] ?: $user['email']) ?></span>
+                    <a href="/my-paintings">My Paintings</a>
                     <a href="/profile">Profile</a>
                     <?php if ($auth->isAdmin()): ?>
                         <a href="/admin">Admin</a>

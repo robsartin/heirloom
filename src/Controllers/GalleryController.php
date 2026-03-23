@@ -128,4 +128,38 @@ class GalleryController
         header('Location: ' . $redirect);
         exit;
     }
+
+    public function myPaintings(): void
+    {
+        $this->auth->requireLogin();
+        $userId = $this->auth->userId();
+
+        $wanted = $this->db->fetchAll(
+            'SELECT p.* FROM paintings p
+             JOIN interests i ON i.painting_id = p.id
+             WHERE i.user_id = :uid AND p.awarded_to IS NULL
+             ORDER BY i.created_at DESC',
+            [':uid' => $userId]
+        );
+
+        $awarded = $this->db->fetchAll(
+            'SELECT * FROM paintings WHERE awarded_to = :uid ORDER BY awarded_at DESC',
+            [':uid' => $userId]
+        );
+
+        $noLongerAvailable = $this->db->fetchAll(
+            'SELECT p.* FROM paintings p
+             JOIN interests i ON i.painting_id = p.id
+             WHERE i.user_id = :uid AND p.awarded_to IS NOT NULL AND p.awarded_to != :uid2
+             ORDER BY p.awarded_at DESC',
+            [':uid' => $userId, ':uid2' => $userId]
+        );
+
+        Template::render('my-paintings', [
+            'wanted' => $wanted,
+            'awarded' => $awarded,
+            'noLongerAvailable' => $noLongerAvailable,
+            'auth' => $this->auth,
+        ]);
+    }
 }
