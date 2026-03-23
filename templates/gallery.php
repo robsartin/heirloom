@@ -1,4 +1,5 @@
-<?php use Heirloom\Template; ?>
+<?php use Heirloom\Template;
+use Heirloom\Thumbnail; ?>
 
 <div class="gallery-header">
     <h1>Paintings Available</h1>
@@ -13,7 +14,7 @@
             <div class="painting-card">
                 <a href="/painting/<?= $p['id'] ?>">
                     <img class="painting-card-image"
-                         src="/uploads/<?= Template::escape($p['filename']) ?>"
+                         src="/uploads/<?= Template::escape(Thumbnail::thumbFilename($p['filename'])) ?>"
                          alt="<?= Template::escape($p['title']) ?>"
                          loading="lazy">
                     <div class="painting-card-body">
