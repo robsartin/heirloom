@@ -3,6 +3,10 @@ declare(strict_types=1);
 
 namespace Heirloom;
 
+/**
+ * Mailer implementation that writes messages to error_log and stores them in memory.
+ * Intended for development/testing so emails can be inspected without an SMTP server.
+ */
 class LogMailer implements Mailer
 {
     /** @var EmailMessage[] */

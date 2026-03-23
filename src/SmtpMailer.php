@@ -5,6 +5,9 @@ namespace Heirloom;
 
 use PHPMailer\PHPMailer\PHPMailer;
 
+/**
+ * Production Mailer implementation that sends email via SMTP using PHPMailer.
+ */
 class SmtpMailer implements Mailer
 {
     public function __construct(

@@ -3,6 +3,10 @@ declare(strict_types=1);
 
 namespace Heirloom;
 
+/**
+ * Simple regex-based HTTP router that matches URI patterns with named placeholders
+ * (e.g. /painting/{id}) and dispatches to callable handlers.
+ */
 class Router
 {
     private array $routes = [];
@@ -17,6 +21,10 @@ class Router
         $this->routes['POST'][] = [$pattern, $handler];
     }
 
+    /**
+     * Match the request against registered routes and invoke the first matching handler.
+     * Renders a 404 error page if no route matches.
+     */
     public function dispatch(string $method, string $uri): void
     {
         $uri = rtrim($uri, '/') ?: '/';

@@ -3,6 +3,10 @@ declare(strict_types=1);
 
 namespace Heirloom;
 
+/**
+ * Immutable value object representing an outbound email with HTML and plain-text bodies.
+ * If no plain-text body is provided, one is derived by stripping HTML tags.
+ */
 class EmailMessage
 {
     public readonly string $textBody;

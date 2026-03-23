@@ -3,6 +3,9 @@ declare(strict_types=1);
 
 namespace Heirloom;
 
+/**
+ * Database-backed sliding-window rate limiter used to throttle login and registration attempts.
+ */
 class RateLimiter
 {
     public function __construct(
@@ -11,6 +14,9 @@ class RateLimiter
         private int $windowMinutes = 15,
     ) {}
 
+    /**
+     * @param string $identifier Typically a normalised email address or IP
+     */
     public function isAllowed(string $identifier): bool
     {
         return $this->getAttemptCount($identifier) < $this->maxAttempts;

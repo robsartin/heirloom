@@ -6,6 +6,10 @@ namespace Heirloom;
 use PDO;
 use PDOStatement;
 
+/**
+ * Thin PDO wrapper providing prepared-statement convenience methods and a singleton accessor.
+ * Connects to MySQL using credentials from Config.
+ */
 class Database
 {
     private static ?self $instance = null;
@@ -40,6 +44,9 @@ class Database
         return self::$instance;
     }
 
+    /**
+     * @param array<string, mixed> $params Named placeholder values
+     */
     public function query(string $sql, array $params = []): PDOStatement
     {
         $stmt = $this->pdo->prepare($sql);
@@ -47,12 +54,20 @@ class Database
         return $stmt;
     }
 
+    /**
+     * @param array<string, mixed> $params Named placeholder values
+     * @return array<string, mixed>|null A single associative row, or null if no match
+     */
     public function fetchOne(string $sql, array $params = []): ?array
     {
         $row = $this->query($sql, $params)->fetch();
         return $row ?: null;
     }
 
+    /**
+     * @param array<string, mixed> $params Named placeholder values
+     * @return list<array<string, mixed>> All matching rows as associative arrays
+     */
     public function fetchAll(string $sql, array $params = []): array
     {
         return $this->query($sql, $params)->fetchAll();
@@ -68,6 +83,11 @@ class Database
         return (int) $this->pdo->lastInsertId();
     }
 
+    /**
+     * Return the first column of the first row (useful for COUNT, MAX, etc.).
+     *
+     * @param array<string, mixed> $params Named placeholder values
+     */
     public function scalar(string $sql, array $params = []): mixed
     {
         $row = $this->fetchOne($sql, $params);

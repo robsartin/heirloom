@@ -3,6 +3,10 @@ declare(strict_types=1);
 
 namespace Heirloom;
 
+/**
+ * Loads configuration from a .env file and provides static access to values,
+ * falling back to $_ENV for environment-level overrides.
+ */
 class Config
 {
     private static array $values = [];

@@ -3,6 +3,10 @@ declare(strict_types=1);
 
 namespace Heirloom;
 
+/**
+ * Read/write access to the site_settings database table, providing typed getters
+ * (string, int, bool) with configurable defaults.
+ */
 class SiteSettings
 {
     public const DEFAULT_SITE_NAME = 'Heirloom Gallery';
@@ -57,6 +61,9 @@ class SiteSettings
         }
     }
 
+    /**
+     * @param array<string, string> $values Map of setting_key => setting_value to upsert
+     */
     public function setBulk(array $values): void
     {
         foreach ($values as $key => $value) {
