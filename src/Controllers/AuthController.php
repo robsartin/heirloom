@@ -43,9 +43,7 @@ class AuthController
             $user = $this->auth->attemptPasswordLogin($email, $password);
             if ($user) {
                 $this->auth->loginUser((int) $user['id']);
-                $redirect = $_SESSION['redirect_after_login'] ?? '/';
-                unset($_SESSION['redirect_after_login']);
-                header('Location: ' . $redirect);
+                header('Location: ' . $this->auth->consumeRedirect());
                 exit;
             }
             $_SESSION['auth_error'] = 'Invalid email or password.';
@@ -81,7 +79,7 @@ class AuthController
 
     public function register(): void
     {
-        $email = strtolower(trim($_POST['email'] ?? ''));
+        $email = Auth::normalizeEmail($_POST['email'] ?? '');
         $name = trim($_POST['name'] ?? '');
 
         if (!$email || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
@@ -130,9 +128,7 @@ class AuthController
             exit;
         }
 
-        $redirect = $_SESSION['redirect_after_login'] ?? '/';
-        unset($_SESSION['redirect_after_login']);
-        header('Location: ' . $redirect);
+        header('Location: ' . $this->auth->consumeRedirect());
         exit;
     }
 
@@ -167,7 +163,7 @@ class AuthController
         $hash = password_hash($password, PASSWORD_DEFAULT);
         $this->db->execute(
             'UPDATE users SET password_hash = :hash WHERE id = :id',
-            [':hash' => $hash, ':id' => $_SESSION['user_id']]
+            [':hash' => $hash, ':id' => $this->auth->userId()]
         );
 
         $_SESSION['auth_success'] = 'Password set successfully!';
@@ -204,9 +200,7 @@ class AuthController
             $user = $this->auth->findOrCreateUserByEmail($email, $name);
             $this->auth->loginUser((int) $user['id']);
 
-            $redirect = $_SESSION['redirect_after_login'] ?? '/';
-            unset($_SESSION['redirect_after_login']);
-            header('Location: ' . $redirect);
+            header('Location: ' . $this->auth->consumeRedirect());
             exit;
         } catch (\Exception $e) {
             error_log('OAuth error: ' . $e->getMessage());

@@ -13,7 +13,7 @@
             <div class="nav-links">
                 <?php if ($auth && $auth->isLoggedIn()): ?>
                     <?php $user = $auth->user(); ?>
-                    <span class="nav-user"><?= htmlspecialchars($user['name'] ?: $user['email']) ?></span>
+                    <span class="nav-user"><?= \Heirloom\Template::escape($user['name'] ?: $user['email']) ?></span>
                     <?php if ($auth->isAdmin()): ?>
                         <a href="/admin">Admin</a>
                         <a href="/admin/upload">Upload</a>

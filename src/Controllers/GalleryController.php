@@ -16,7 +16,6 @@ class GalleryController
     public function index(): void
     {
         $page = max(1, (int) ($_GET['page'] ?? 1));
-        $offset = ($page - 1) * self::PER_PAGE;
 
         $total = (int) $this->db->scalar(
             'SELECT COUNT(*) FROM paintings WHERE awarded_to IS NULL'
@@ -39,7 +38,7 @@ class GalleryController
         if ($this->auth->isLoggedIn()) {
             $rows = $this->db->fetchAll(
                 'SELECT painting_id FROM interests WHERE user_id = :uid',
-                [':uid' => $_SESSION['user_id']]
+                [':uid' => $this->auth->userId()]
             );
             foreach ($rows as $row) {
                 $userInterests[$row['painting_id']] = true;
@@ -72,7 +71,7 @@ class GalleryController
         if ($this->auth->isLoggedIn()) {
             $hasInterest = (bool) $this->db->fetchOne(
                 'SELECT 1 FROM interests WHERE painting_id = :pid AND user_id = :uid',
-                [':pid' => (int) $id, ':uid' => $_SESSION['user_id']]
+                [':pid' => (int) $id, ':uid' => $this->auth->userId()]
             );
         }
 
@@ -104,7 +103,7 @@ class GalleryController
 
         $existing = $this->db->fetchOne(
             'SELECT 1 FROM interests WHERE painting_id = :pid AND user_id = :uid',
-            [':pid' => (int) $id, ':uid' => $_SESSION['user_id']]
+            [':pid' => (int) $id, ':uid' => $this->auth->userId()]
         );
 
         $message = trim($_POST['message'] ?? '');
@@ -113,16 +112,19 @@ class GalleryController
             // Toggle off - remove interest
             $this->db->execute(
                 'DELETE FROM interests WHERE painting_id = :pid AND user_id = :uid',
-                [':pid' => (int) $id, ':uid' => $_SESSION['user_id']]
+                [':pid' => (int) $id, ':uid' => $this->auth->userId()]
             );
         } else {
             $this->db->execute(
                 'INSERT INTO interests (painting_id, user_id, message) VALUES (:pid, :uid, :msg)',
-                [':pid' => (int) $id, ':uid' => $_SESSION['user_id'], ':msg' => $message]
+                [':pid' => (int) $id, ':uid' => $this->auth->userId(), ':msg' => $message]
             );
         }
 
         $redirect = $_POST['redirect'] ?? '/painting/' . $id;
+        if (!str_starts_with($redirect, '/') || str_starts_with($redirect, '//')) {
+            $redirect = '/painting/' . $id;
+        }
         header('Location: ' . $redirect);
         exit;
     }

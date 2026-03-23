@@ -10,8 +10,12 @@
     </div>
     <div class="painting-detail-info">
 
+        <?php if (!empty($error)): ?>
+            <div class="alert alert-error"><?= Template::escape($error) ?></div>
+        <?php endif; ?>
+
         <?php if (!empty($success)): ?>
-            <div class="alert alert-success"><?= htmlspecialchars($success) ?></div>
+            <div class="alert alert-success"><?= Template::escape($success) ?></div>
         <?php endif; ?>
 
         <form method="POST" action="/admin/painting/<?= $painting['id'] ?>/edit" style="margin-bottom:1.5rem;">

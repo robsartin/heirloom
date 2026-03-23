@@ -1,16 +1,15 @@
 <?php
 use Heirloom\Template;
 
-// Build a sort URL: toggles direction if already sorting by that column
-function sortUrl(string $col, string $filter, string $currentSort, string $currentDir): string {
-    $newDir = ($currentSort === $col && $currentDir === 'DESC') ? 'asc' : 'desc';
+$sortUrl = function (string $col) use ($filter, $sort, $dir): string {
+    $newDir = ($sort === $col && $dir === 'DESC') ? 'asc' : 'desc';
     return '/admin?' . http_build_query(['filter' => $filter, 'sort' => $col, 'dir' => $newDir]);
-}
+};
 
-function sortIndicator(string $col, string $currentSort, string $currentDir): string {
-    if ($currentSort !== $col) return '';
-    return $currentDir === 'ASC' ? ' &#9650;' : ' &#9660;';
-}
+$sortIndicator = function (string $col) use ($sort, $dir): string {
+    if ($sort !== $col) return '';
+    return $dir === 'ASC' ? ' &#9650;' : ' &#9660;';
+};
 ?>
 
 <h1>Admin Dashboard</h1>
@@ -31,11 +30,11 @@ function sortIndicator(string $col, string $currentSort, string $currentDir): st
         <thead>
             <tr>
                 <th></th>
-                <th><a href="<?= sortUrl('title', $filter, $sort, $dir) ?>" class="sort-header">Title<?= sortIndicator('title', $sort, $dir) ?></a></th>
-                <th><a href="<?= sortUrl('interest_count', $filter, $sort, $dir) ?>" class="sort-header">Interested<?= sortIndicator('interest_count', $sort, $dir) ?></a></th>
-                <th><a href="<?= sortUrl('last_interest_at', $filter, $sort, $dir) ?>" class="sort-header">Last Interest<?= sortIndicator('last_interest_at', $sort, $dir) ?></a></th>
+                <th><a href="<?= $sortUrl('title', $filter, $sort, $dir) ?>" class="sort-header">Title<?= $sortIndicator('title', $sort, $dir) ?></a></th>
+                <th><a href="<?= $sortUrl('interest_count', $filter, $sort, $dir) ?>" class="sort-header">Interested<?= $sortIndicator('interest_count', $sort, $dir) ?></a></th>
+                <th><a href="<?= $sortUrl('last_interest_at', $filter, $sort, $dir) ?>" class="sort-header">Last Interest<?= $sortIndicator('last_interest_at', $sort, $dir) ?></a></th>
                 <th>Status</th>
-                <th><a href="<?= sortUrl('created_at', $filter, $sort, $dir) ?>" class="sort-header">Uploaded<?= sortIndicator('created_at', $sort, $dir) ?></a></th>
+                <th><a href="<?= $sortUrl('created_at', $filter, $sort, $dir) ?>" class="sort-header">Uploaded<?= $sortIndicator('created_at', $sort, $dir) ?></a></th>
                 <th>Actions</th>
             </tr>
         </thead>

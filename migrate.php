@@ -38,7 +38,6 @@ CREATE TABLE IF NOT EXISTS magic_links (
     token VARCHAR(64) UNIQUE NOT NULL,
     used TINYINT NOT NULL DEFAULT 0,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    INDEX idx_token (token),
     INDEX idx_email (email)
 ) ENGINE=InnoDB;
 ");
