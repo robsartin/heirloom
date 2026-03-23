@@ -535,6 +535,12 @@ main {
     margin-top: 2rem;
 }
 
+/* Admin table scroll wrapper */
+.admin-table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
     .gallery-grid {
@@ -549,5 +555,13 @@ main {
     .nav-container {
         flex-direction: column;
         gap: 0.5rem;
+    }
+
+    .filter-bar {
+        flex-wrap: wrap;
+    }
+
+    .admin-table {
+        min-width: 700px;
     }
 }
