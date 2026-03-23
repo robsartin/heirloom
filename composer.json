@@ -27,9 +27,12 @@
             "Heirloom\\Tests\\": "tests/"
         }
     },
+    "config": {
+        "process-timeout": 120
+    },
     "scripts": {
-        "test": "phpunit",
-        "spec": "phpspec run --format=pretty",
+        "test": "@php vendor/bin/phpunit",
+        "spec": "@php vendor/bin/phpspec run --format=pretty --no-interaction",
         "check": ["@test", "@spec"]
     }
 }
