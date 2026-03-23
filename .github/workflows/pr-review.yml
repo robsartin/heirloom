@@ -1,0 +1,88 @@
+name: PR Review
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    if: github.actor != 'robsartin'
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get PR diff
+        id: diff
+        run: |
+          DIFF=$(gh pr diff ${{ github.event.pull_request.number }} --repo ${{ github.repository }})
+          # Truncate to 100k chars to stay within API limits
+          DIFF="${DIFF:0:100000}"
+          # Write to file to avoid shell escaping issues
+          echo "$DIFF" > /tmp/pr_diff.txt
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Get PR info
+        id: pr_info
+        run: |
+          echo "title=${{ github.event.pull_request.title }}" >> $GITHUB_OUTPUT
+          echo "body<<GHEOF" >> $GITHUB_OUTPUT
+          echo "${{ github.event.pull_request.body }}" >> $GITHUB_OUTPUT
+          echo "GHEOF" >> $GITHUB_OUTPUT
+
+      - name: Review with Claude
+        id: review
+        run: |
+          DIFF=$(cat /tmp/pr_diff.txt)
+
+          REVIEW=$(curl -s https://api.anthropic.com/v1/messages \
+            -H "content-type: application/json" \
+            -H "x-api-key: $ANTHROPIC_API_KEY" \
+            -H "anthropic-version: 2023-06-01" \
+            -d "$(jq -n \
+              --arg diff "$DIFF" \
+              --arg title "${{ github.event.pull_request.title }}" \
+              '{
+                model: "claude-sonnet-4-5-20250514",
+                max_tokens: 4096,
+                messages: [{
+                  role: "user",
+                  content: ("You are a code reviewer for Heirloom Gallery, a PHP 8 painting giveaway app. Review this PR.\n\nTitle: " + $title + "\n\nDiff:\n```\n" + $diff + "\n```\n\nProvide a concise review covering:\n1. **Summary**: What the PR does (1-2 sentences)\n2. **Issues**: Bugs, security problems, or logic errors (if any)\n3. **Suggestions**: Improvements worth considering (if any)\n4. **Verdict**: APPROVE if the code is correct and safe, or REQUEST_CHANGES if there are issues that must be fixed\n\nBe direct. Skip praise. Only flag real problems.")
+                }]
+              }')" \
+          )
+
+          # Extract the text content
+          BODY=$(echo "$REVIEW" | jq -r '.content[0].text // "Review failed: could not parse response"')
+
+          # Determine review event
+          if echo "$BODY" | grep -qi "REQUEST_CHANGES"; then
+            EVENT="REQUEST_CHANGES"
+          else
+            EVENT="APPROVE"
+          fi
+
+          # Write to file to preserve formatting
+          echo "$BODY" > /tmp/review_body.txt
+          echo "event=$EVENT" >> $GITHUB_OUTPUT
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+
+      - name: Post review
+        run: |
+          BODY=$(cat /tmp/review_body.txt)
+          EVENT=${{ steps.review.outputs.event }}
+
+          gh api repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/reviews \
+            -X POST \
+            -f body="$BODY" \
+            -f event="$EVENT"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
