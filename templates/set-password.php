@@ -12,6 +12,7 @@
 
     <div class="form-card">
         <form method="POST" action="/set-password">
+            <?= \Heirloom\Csrf::hiddenField() ?>
             <div class="form-group">
                 <label for="password">New Password (min 8 characters)</label>
                 <input type="password" name="password" id="password" required minlength="8">

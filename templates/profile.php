@@ -14,6 +14,7 @@
         <p style="margin-bottom:1rem;color:var(--text-muted);font-size:0.9rem;"><?= \Heirloom\Template::escape($user['email']) ?></p>
 
         <form method="POST" action="/profile">
+            <?= \Heirloom\Csrf::hiddenField() ?>
             <div class="form-group">
                 <label for="shipping_address">Shipping Address</label>
                 <textarea name="shipping_address" id="shipping_address" rows="4"

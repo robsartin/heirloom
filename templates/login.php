@@ -15,6 +15,7 @@
         <div class="divider">or use email</div>
 
         <form method="POST" action="/login">
+            <?= \Heirloom\Csrf::hiddenField() ?>
             <div class="form-group">
                 <label for="email">Email</label>
                 <input type="email" name="email" id="email" required placeholder="you@example.com">

@@ -4,6 +4,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/../vendor/autoload.php';
 
 use Heirloom\Config;
+use Heirloom\Csrf;
 use Heirloom\Database;
 use Heirloom\Router;
 use Heirloom\Auth;
@@ -73,5 +74,15 @@ $router->post('/admin/painting/{id}/tracking', [$admin, 'updateTracking']);
 $router->post('/admin/painting/{id}/delete', [$admin, 'delete']);
 $router->get('/admin/settings', [$admin, 'settingsForm']);
 $router->post('/admin/settings', [$admin, 'updateSettings']);
+
+// CSRF validation for all POST requests
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $token = $_POST['_csrf_token'] ?? '';
+    if (!Csrf::validate($token)) {
+        http_response_code(403);
+        echo '<h1>403 Forbidden</h1><p>Invalid or missing CSRF token. Please go back and try again.</p>';
+        exit;
+    }
+}
 
 $router->dispatch($_SERVER['REQUEST_METHOD'], parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH));

@@ -28,6 +28,7 @@ foreach ($settings as $row) {
 ?>
 
 <form method="POST" action="/admin/settings">
+            <?= \Heirloom\Csrf::hiddenField() ?>
     <div class="settings-grid">
         <?php foreach ($groups as $groupName => $keys): ?>
             <div class="settings-card">
