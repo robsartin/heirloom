@@ -49,6 +49,7 @@ $admin = new AdminController($db, $auth, $settings);
 $router->get('/', [$gallery, 'index']);
 $router->get('/painting/{id}', [$gallery, 'show']);
 $router->post('/painting/{id}/interest', [$gallery, 'expressInterest']);
+$router->get('/my-paintings', [$gallery, 'myPaintings']);
 
 // Auth routes
 $router->get('/login', [$authCtrl, 'loginForm']);
