@@ -210,4 +210,32 @@ HTML;
             return false;
         }
     }
+
+    public function buildAwardEmail(string $recipientEmail, string $paintingTitle): EmailMessage
+    {
+        $name = $this->siteName();
+
+        $subject = "A painting has been awarded to you - $name";
+        $htmlBody = <<<HTML
+<h2>Congratulations!</h2>
+<p>You have been awarded the painting <strong>$paintingTitle</strong> from $name.</p>
+<p>We will be in touch with shipping details soon.</p>
+HTML;
+        $textBody = "Congratulations! You have been awarded the painting \"$paintingTitle\" from $name. We will be in touch with shipping details soon.";
+
+        return new EmailMessage($recipientEmail, $subject, $htmlBody, $textBody);
+    }
+
+    public function sendAwardNotification(string $email, string $paintingTitle): bool
+    {
+        $message = $this->buildAwardEmail($email, $paintingTitle);
+        $mailer = $this->mailer ?? new LogMailer();
+
+        try {
+            return $mailer->send($message);
+        } catch (\Exception $e) {
+            error_log("Mail error: " . $e->getMessage());
+            return false;
+        }
+    }
 }
