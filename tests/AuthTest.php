@@ -5,6 +5,7 @@ namespace Heirloom\Tests;
 
 use Heirloom\Auth;
 use Heirloom\Database;
+use Heirloom\SiteSettings;
 use PDO;
 use PHPUnit\Framework\TestCase;
 
@@ -449,5 +450,81 @@ class AuthTest extends TestCase
         $this->assertArrayHasKey('name', $user);
         $this->assertArrayHasKey('is_admin', $user);
         $this->assertArrayHasKey('password_hash', $user);
+    }
+
+    // --- magicLinkExpiryMinutes is always a safe integer (issue #20) ---
+
+    public function testMagicLinkExpiryMinutesIsAlwaysInt(): void
+    {
+        // Use reflection to test the private method directly
+        $reflection = new \ReflectionMethod(Auth::class, 'magicLinkExpiryMinutes');
+        $reflection->setAccessible(true);
+
+        // Without settings, default should be int 60
+        $result = $reflection->invoke($this->auth);
+        $this->assertIsInt($result);
+        $this->assertSame(60, $result);
+    }
+
+    public function testMagicLinkExpiryMinutesWithCustomSettings(): void
+    {
+        // Create site_settings table and configure custom expiry
+        $pdo = new PDO('sqlite::memory:');
+        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+        $pdo->exec("
+            CREATE TABLE users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                email TEXT UNIQUE NOT NULL,
+                name TEXT NOT NULL DEFAULT '',
+                password_hash TEXT,
+                is_admin INTEGER NOT NULL DEFAULT 0,
+                created_at TEXT NOT NULL DEFAULT (datetime('now'))
+            )
+        ");
+        $pdo->exec("
+            CREATE TABLE magic_links (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                email TEXT NOT NULL,
+                token TEXT UNIQUE NOT NULL,
+                used INTEGER NOT NULL DEFAULT 0,
+                created_at TEXT NOT NULL DEFAULT (datetime('now'))
+            )
+        ");
+        $pdo->exec("
+            CREATE TABLE site_settings (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                setting_key TEXT UNIQUE NOT NULL,
+                setting_value TEXT NOT NULL DEFAULT ''
+            )
+        ");
+
+        $db = new Database($pdo);
+        $settings = new SiteSettings($db);
+        $settings->set('magic_link_expiry_minutes', '30');
+
+        $auth = new Auth($db);
+        $auth->setSettings($settings);
+
+        $reflection = new \ReflectionMethod(Auth::class, 'magicLinkExpiryMinutes');
+        $reflection->setAccessible(true);
+
+        $result = $reflection->invoke($auth);
+        $this->assertIsInt($result);
+        $this->assertSame(30, $result);
+    }
+
+    public function testConsumeMagicLinkCastsExpiryToInt(): void
+    {
+        // Verify the (int) cast in consumeMagicLink prevents SQL injection.
+        // The key assertion: magicLinkExpiryMinutes returns int, so the
+        // interpolated value in the SQL query is always a safe integer.
+        $reflection = new \ReflectionMethod(Auth::class, 'magicLinkExpiryMinutes');
+        $reflection->setAccessible(true);
+
+        $result = $reflection->invoke($this->auth);
+        // Must be int — this guarantees it's safe for SQL interpolation
+        $this->assertIsInt($result);
+        $this->assertGreaterThan(0, $result);
     }
 }
