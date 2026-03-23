@@ -9,8 +9,19 @@ class Auth
 {
     private ?array $cachedUser = null;
     private bool $userFetched = false;
+    private ?SiteSettings $settings = null;
 
     public function __construct(private Database $db) {}
+
+    public function setSettings(SiteSettings $settings): void
+    {
+        $this->settings = $settings;
+    }
+
+    private function magicLinkExpiryMinutes(): int
+    {
+        return $this->settings ? $this->settings->getInt('magic_link_expiry_minutes', 60) : 60;
+    }
 
     public function user(): ?array
     {
@@ -145,8 +156,9 @@ class Auth
 
     public function consumeMagicLink(string $token): ?string
     {
+        $minutes = $this->magicLinkExpiryMinutes();
         $link = $this->db->fetchOne(
-            "SELECT * FROM magic_links WHERE token = :token AND used = 0 AND created_at > DATE_SUB(NOW(), INTERVAL 1 HOUR)",
+            "SELECT * FROM magic_links WHERE token = :token AND used = 0 AND created_at > DATE_SUB(NOW(), INTERVAL $minutes MINUTE)",
             [':token' => $token]
         );
         if (!$link) {

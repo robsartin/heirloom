@@ -108,6 +108,35 @@ CREATE TABLE IF NOT EXISTS award_log (
 ) ENGINE=InnoDB;
 ");
 
+// Site settings table
+$pdo->exec("
+CREATE TABLE IF NOT EXISTS site_settings (
+    setting_key VARCHAR(100) PRIMARY KEY,
+    setting_value VARCHAR(1000) NOT NULL DEFAULT '',
+    label VARCHAR(255) NOT NULL DEFAULT '',
+    description VARCHAR(1000) NOT NULL DEFAULT ''
+) ENGINE=InnoDB;
+");
+
+// Seed default settings
+$defaults = [
+    ['magic_link_expiry_minutes', '60', 'Magic Link Expiry (minutes)', 'How long a magic login link stays valid after being sent.'],
+    ['site_name', 'Heirloom Gallery', 'Site Name', 'Displayed in the navigation bar and page title.'],
+    ['gallery_per_page', '12', 'Gallery Items Per Page', 'Number of paintings shown per page in the public gallery.'],
+    ['admin_per_page', '20', 'Admin Items Per Page', 'Number of paintings shown per page in the admin dashboard.'],
+    ['registration_open', '1', 'Registration Open', 'Set to 0 to disable new user registration.'],
+    ['contact_email', '', 'Contact Email', 'Shown to users who need to reach the site owner. Leave blank to hide.'],
+];
+foreach ($defaults as [$key, $value, $label, $desc]) {
+    $stmt = $pdo->prepare('SELECT 1 FROM site_settings WHERE setting_key = :k');
+    $stmt->execute([':k' => $key]);
+    if (!$stmt->fetch()) {
+        $stmt = $pdo->prepare('INSERT INTO site_settings (setting_key, setting_value, label, description) VALUES (:k, :v, :l, :d)');
+        $stmt->execute([':k' => $key, ':v' => $value, ':l' => $label, ':d' => $desc]);
+    }
+}
+echo "Site settings table ready.\n";
+
 // Seed admin user
 $adminEmail = 'rob.sartin@gmail.com';
 $stmt = $pdo->prepare('SELECT id FROM users WHERE email = :email');
