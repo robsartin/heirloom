@@ -16,6 +16,7 @@
 
         <form method="POST" action="/login">
             <?= \Heirloom\Csrf::hiddenField() ?>
+            <input type="hidden" name="forgot_password" value="1">
             <div class="form-group">
                 <label for="email">Email</label>
                 <input type="email" name="email" id="email" required placeholder="you@example.com">
@@ -28,6 +29,10 @@
 
             <button type="submit" class="btn btn-primary" style="width:100%">Log In</button>
         </form>
+
+        <p style="text-align:center;margin-top:0.75rem;font-size:0.85rem;color:var(--text-muted)">
+            Forgot your password? Leave the password field blank and click Log In to receive a magic link.
+        </p>
 
         <p style="text-align:center;margin-top:1rem;font-size:0.9rem;">
             Don't have an account? <a href="/register">Register</a>

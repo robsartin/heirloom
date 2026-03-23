@@ -67,6 +67,12 @@ class AuthController
             exit;
         }
 
+        // If the user explicitly requested "forgot password", set a session flag
+        // so that after magic link login they are redirected to /set-password.
+        if (!empty($_POST['forgot_password'])) {
+            $_SESSION['forgot_password'] = true;
+        }
+
         $this->rateLimiter->record($identifier);
         $token = $this->auth->createMagicLink($email);
         $sent = $this->auth->sendMagicLink($email, $token);
@@ -157,8 +163,11 @@ class AuthController
         $user = $this->auth->findOrCreateUserByEmail($email);
         $this->auth->loginUser((int) $user['id']);
 
-        // If user has no password, prompt to set one
-        if (!$user['password_hash']) {
+        // If user has no password, or explicitly requested password reset, prompt to set one
+        $forgotPassword = !empty($_SESSION['forgot_password']);
+        unset($_SESSION['forgot_password']);
+
+        if (!$user['password_hash'] || $forgotPassword) {
             header('Location: /set-password');
             exit;
         }
