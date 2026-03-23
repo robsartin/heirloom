@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Heirloom Gallery</title>
+    <title><?= \Heirloom\Template::escape($siteName) ?></title>
     <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
     <nav class="navbar">
         <div class="container nav-container">
-            <a href="/" class="nav-brand">Heirloom Gallery</a>
+            <a href="/" class="nav-brand"><?= \Heirloom\Template::escape($siteName) ?></a>
             <div class="nav-links">
                 <?php if ($auth && $auth->isLoggedIn()): ?>
                     <?php $user = $auth->user(); ?>
@@ -33,7 +33,7 @@
     </main>
     <footer class="footer">
         <div class="container">
-            <p>Heirloom Gallery &mdash; Paintings looking for new homes</p>
+            <p><?= \Heirloom\Template::escape($siteName) ?> &mdash; Paintings looking for new homes</p>
         </div>
     </footer>
 </body>

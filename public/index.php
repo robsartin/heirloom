@@ -8,6 +8,7 @@ use Heirloom\Database;
 use Heirloom\Router;
 use Heirloom\Auth;
 use Heirloom\SiteSettings;
+use Heirloom\Template;
 use Heirloom\Controllers\GalleryController;
 use Heirloom\Controllers\AuthController;
 use Heirloom\Controllers\AdminController;
@@ -18,6 +19,7 @@ session_start();
 
 $db = Database::getInstance();
 $settings = new SiteSettings($db);
+Template::setGlobal('siteName', $settings->get('site_name', SiteSettings::DEFAULT_SITE_NAME));
 $auth = new Auth($db);
 $auth->setSettings($settings);
 $router = new Router();

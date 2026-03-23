@@ -5,6 +5,8 @@ namespace Heirloom;
 
 class SiteSettings
 {
+    public const DEFAULT_SITE_NAME = 'Heirloom Gallery';
+
     public function __construct(private Database $db) {}
 
     public function get(string $key, string $default = ''): string
