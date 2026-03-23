@@ -253,6 +253,19 @@ class AdminController
                 'INSERT INTO award_log (painting_id, user_id, awarded_by, action) VALUES (:pid, :uid, :aid, :action)',
                 [':pid' => (int) $id, ':uid' => $userId, ':aid' => $adminId, ':action' => 'awarded']
             );
+
+            $recipient = $this->db->fetchOne(
+                'SELECT email FROM users WHERE id = :id',
+                [':id' => $userId]
+            );
+            $painting = $this->db->fetchOne(
+                'SELECT title FROM paintings WHERE id = :id',
+                [':id' => (int) $id]
+            );
+            if ($recipient && $painting) {
+                $this->auth->sendAwardNotification($recipient['email'], $painting['title']);
+            }
+
             $_SESSION['admin_success'] = 'Painting awarded!';
         } else {
             $painting = $this->db->fetchOne('SELECT awarded_to FROM paintings WHERE id = :id', [':id' => (int) $id]);
