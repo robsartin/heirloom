@@ -7,6 +7,8 @@ use Heirloom\Config;
 use Heirloom\Database;
 use Heirloom\Router;
 use Heirloom\Auth;
+use Heirloom\LogMailer;
+use Heirloom\SmtpMailer;
 use Heirloom\SiteSettings;
 use Heirloom\Template;
 use Heirloom\Controllers\GalleryController;
@@ -22,6 +24,19 @@ $settings = new SiteSettings($db);
 Template::setGlobal('siteName', $settings->get('site_name', SiteSettings::DEFAULT_SITE_NAME));
 $auth = new Auth($db);
 $auth->setSettings($settings);
+$mailHost = Config::get('MAIL_HOST');
+if ($mailHost) {
+    $auth->setMailer(new SmtpMailer(
+        host: $mailHost,
+        port: (int) Config::get('MAIL_PORT', '587'),
+        username: Config::get('MAIL_USERNAME'),
+        password: Config::get('MAIL_PASSWORD'),
+        fromEmail: Config::get('MAIL_FROM'),
+        fromName: Config::get('MAIL_FROM_NAME', $settings->get('site_name', SiteSettings::DEFAULT_SITE_NAME)),
+    ));
+} else {
+    $auth->setMailer(new LogMailer());
+}
 $router = new Router();
 
 $gallery = new GalleryController($db, $auth, $settings);

@@ -3,19 +3,23 @@ declare(strict_types=1);
 
 namespace Heirloom;
 
-use PHPMailer\PHPMailer\PHPMailer;
-
 class Auth
 {
     private ?array $cachedUser = null;
     private bool $userFetched = false;
     private ?SiteSettings $settings = null;
+    private ?Mailer $mailer = null;
 
     public function __construct(private Database $db) {}
 
     public function setSettings(SiteSettings $settings): void
     {
         $this->settings = $settings;
+    }
+
+    public function setMailer(Mailer $mailer): void
+    {
+        $this->mailer = $mailer;
     }
 
     private function magicLinkExpiryMinutes(): int
@@ -176,42 +180,31 @@ class Auth
         return $link['email'];
     }
 
-    public function sendMagicLink(string $email, string $token): bool
+    public function buildMagicLinkEmail(string $email, string $token): EmailMessage
     {
         $url = Config::get('APP_URL') . '/auth/magic/' . $token;
+        $name = $this->siteName();
+        $expiry = $this->magicLinkExpiryMinutes();
 
-        $mailHost = Config::get('MAIL_HOST');
-        if (!$mailHost) {
-            // Fallback: just log for local dev
-            error_log("Magic link for $email: $url");
-            return true;
-        }
+        $subject = "Your login link - $name";
+        $htmlBody = <<<HTML
+<h2>Welcome to $name</h2>
+<p>Click the link below to log in. This link expires in $expiry minutes and can only be used once.</p>
+<p><a href="$url">Log in to $name</a></p>
+<p>If you didn't request this, you can safely ignore this email.</p>
+HTML;
+        $textBody = "Log in to $name: $url (expires in $expiry minutes, single use)";
 
-        $mail = new PHPMailer(true);
+        return new EmailMessage($email, $subject, $htmlBody, $textBody);
+    }
+
+    public function sendMagicLink(string $email, string $token): bool
+    {
+        $message = $this->buildMagicLinkEmail($email, $token);
+        $mailer = $this->mailer ?? new LogMailer();
+
         try {
-            $mail->isSMTP();
-            $mail->Host = $mailHost;
-            $mail->SMTPAuth = true;
-            $mail->Username = Config::get('MAIL_USERNAME');
-            $mail->Password = Config::get('MAIL_PASSWORD');
-            $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-            $mail->Port = (int) Config::get('MAIL_PORT', '587');
-
-            $mail->setFrom(Config::get('MAIL_FROM'), Config::get('MAIL_FROM_NAME', 'Heirloom'));
-            $mail->addAddress($email);
-            $mail->isHTML(true);
-            $name = $this->siteName();
-            $expiry = $this->magicLinkExpiryMinutes();
-            $mail->Subject = "Your login link - $name";
-            $mail->Body = "
-                <h2>Welcome to $name</h2>
-                <p>Click the link below to log in. This link expires in $expiry minutes and can only be used once.</p>
-                <p><a href=\"$url\">Log in to $name</a></p>
-                <p>If you didn't request this, you can safely ignore this email.</p>
-            ";
-            $mail->AltBody = "Log in to $name: $url";
-            $mail->send();
-            return true;
+            return $mailer->send($message);
         } catch (\Exception $e) {
             error_log("Mail error: " . $e->getMessage());
             return false;
