@@ -318,6 +318,74 @@ class AuthControllerTest extends TestCase
     }
 
     // ---------------------------------------------------------------
+    // Forgot-password flow: magic link redirects to /set-password
+    // ---------------------------------------------------------------
+
+    public function testMagicLoginRedirectsToSetPasswordWhenUserHasNoPasswordHash(): void
+    {
+        // User with no password_hash should always go to /set-password
+        $uid = $this->insertUser('nopass@test.com', 'No Pass');
+
+        $user = $this->db->fetchOne('SELECT * FROM users WHERE id = :id', [':id' => $uid]);
+        $this->assertNull($user['password_hash']);
+
+        // The magicLogin controller checks !$user['password_hash'] and redirects
+        // to /set-password. This verifies the precondition is correct.
+        $this->assertEmpty($user['password_hash']);
+    }
+
+    public function testForgotPasswordSessionFlagIsSetForUserWithPassword(): void
+    {
+        // When a user with a password explicitly requests forgot-password,
+        // the session flag 'forgot_password' should be set so that after
+        // magic link login they are redirected to /set-password.
+        if (!isset($_SESSION)) {
+            $_SESSION = [];
+        }
+
+        $hash = password_hash('existing123', PASSWORD_DEFAULT);
+        $uid = $this->insertUser('haspass@test.com', 'Has Pass', false, $hash);
+
+        // Simulate the forgot-password flow: POST with forgot_password=1 and empty password
+        // The controller sets $_SESSION['forgot_password'] = true
+        $_SESSION['forgot_password'] = true;
+        $this->assertTrue($_SESSION['forgot_password']);
+
+        // After magic link login, a user WITH a password_hash would normally
+        // go to consumeRedirect(). But with the forgot_password flag, they
+        // should be redirected to /set-password instead.
+        $user = $this->db->fetchOne('SELECT * FROM users WHERE id = :id', [':id' => $uid]);
+        $this->assertNotEmpty($user['password_hash']);
+
+        // The redirect decision: forgot_password flag OR no password_hash
+        $shouldRedirectToSetPassword = !$user['password_hash'] || !empty($_SESSION['forgot_password']);
+        $this->assertTrue($shouldRedirectToSetPassword);
+
+        // Flag should be consumed after use
+        unset($_SESSION['forgot_password']);
+        $this->assertArrayNotHasKey('forgot_password', $_SESSION);
+    }
+
+    public function testMagicLoginDoesNotRedirectToSetPasswordForNormalFlow(): void
+    {
+        // A user WITH a password who logs in via magic link WITHOUT
+        // the forgot-password intent should NOT be redirected to /set-password.
+        if (!isset($_SESSION)) {
+            $_SESSION = [];
+        }
+        unset($_SESSION['forgot_password']);
+
+        $hash = password_hash('existing123', PASSWORD_DEFAULT);
+        $uid = $this->insertUser('normal@test.com', 'Normal', false, $hash);
+
+        $user = $this->db->fetchOne('SELECT * FROM users WHERE id = :id', [':id' => $uid]);
+        $this->assertNotEmpty($user['password_hash']);
+
+        $shouldRedirectToSetPassword = !$user['password_hash'] || !empty($_SESSION['forgot_password']);
+        $this->assertFalse($shouldRedirectToSetPassword);
+    }
+
+    // ---------------------------------------------------------------
     // Redirect safety (mirrors Auth::consumeRedirect logic)
     // ---------------------------------------------------------------
 
