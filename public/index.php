@@ -39,6 +39,8 @@ $router->get('/auth/google/callback', [$authCtrl, 'googleCallback']);
 $router->get('/logout', [$authCtrl, 'logout']);
 $router->get('/set-password', [$authCtrl, 'setPasswordForm']);
 $router->post('/set-password', [$authCtrl, 'setPassword']);
+$router->get('/profile', [$authCtrl, 'profileForm']);
+$router->post('/profile', [$authCtrl, 'updateProfile']);
 
 // Admin routes
 $router->get('/admin', [$admin, 'dashboard']);
@@ -47,6 +49,7 @@ $router->post('/admin/upload', [$admin, 'upload']);
 $router->get('/admin/painting/{id}', [$admin, 'managePainting']);
 $router->post('/admin/painting/{id}/edit', [$admin, 'edit']);
 $router->post('/admin/painting/{id}/award', [$admin, 'award']);
+$router->post('/admin/painting/{id}/tracking', [$admin, 'updateTracking']);
 $router->post('/admin/painting/{id}/delete', [$admin, 'delete']);
 
 $router->dispatch($_SERVER['REQUEST_METHOD'], parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH));

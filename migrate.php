@@ -69,6 +69,45 @@ CREATE TABLE IF NOT EXISTS interests (
 ) ENGINE=InnoDB;
 ");
 
+// Add shipping_address to users (idempotent)
+try {
+    $pdo->exec("ALTER TABLE users ADD COLUMN shipping_address TEXT NULL");
+    echo "Added shipping_address to users.\n";
+} catch (PDOException $e) {
+    if (!str_contains($e->getMessage(), 'Duplicate column')) throw $e;
+}
+
+// Add awarded_at and tracking_number to paintings (idempotent)
+try {
+    $pdo->exec("ALTER TABLE paintings ADD COLUMN awarded_at DATETIME NULL");
+    echo "Added awarded_at to paintings.\n";
+} catch (PDOException $e) {
+    if (!str_contains($e->getMessage(), 'Duplicate column')) throw $e;
+}
+try {
+    $pdo->exec("ALTER TABLE paintings ADD COLUMN tracking_number VARCHAR(255) NULL");
+    echo "Added tracking_number to paintings.\n";
+} catch (PDOException $e) {
+    if (!str_contains($e->getMessage(), 'Duplicate column')) throw $e;
+}
+
+// Award log table
+$pdo->exec("
+CREATE TABLE IF NOT EXISTS award_log (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    painting_id INT NOT NULL,
+    user_id INT NOT NULL,
+    awarded_by INT NOT NULL,
+    action ENUM('awarded', 'unassigned') NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (painting_id) REFERENCES paintings(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (awarded_by) REFERENCES users(id) ON DELETE CASCADE,
+    INDEX idx_painting (painting_id),
+    INDEX idx_user (user_id)
+) ENGINE=InnoDB;
+");
+
 // Seed admin user
 $adminEmail = 'rob.sartin@gmail.com';
 $stmt = $pdo->prepare('SELECT id FROM users WHERE email = :email');

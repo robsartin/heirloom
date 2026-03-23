@@ -176,16 +176,36 @@ class AdminController
         }
 
         $interests = $this->db->fetchAll(
-            'SELECT i.*, u.name, u.email FROM interests i
+            'SELECT i.*, u.name, u.email, u.shipping_address FROM interests i
              JOIN users u ON u.id = i.user_id
              WHERE i.painting_id = :pid
              ORDER BY i.created_at ASC',
             [':pid' => (int) $id]
         );
 
+        $awardedUser = null;
+        if ($painting['awarded_to']) {
+            $awardedUser = $this->db->fetchOne(
+                'SELECT id, name, email, shipping_address FROM users WHERE id = :id',
+                [':id' => $painting['awarded_to']]
+            );
+        }
+
+        $awardLog = $this->db->fetchAll(
+            'SELECT al.*, u.name AS user_name, u.email AS user_email, adm.name AS admin_name
+             FROM award_log al
+             JOIN users u ON u.id = al.user_id
+             JOIN users adm ON adm.id = al.awarded_by
+             WHERE al.painting_id = :pid
+             ORDER BY al.created_at DESC',
+            [':pid' => (int) $id]
+        );
+
         Template::render('admin/manage', [
             'painting' => $painting,
             'interests' => $interests,
+            'awardedUser' => $awardedUser,
+            'awardLog' => $awardLog,
             'auth' => $this->auth,
             'success' => $_SESSION['admin_success'] ?? null,
             'error' => $_SESSION['admin_error'] ?? null,
@@ -222,13 +242,48 @@ class AdminController
 
         $userIdRaw = $_POST['user_id'] ?? '';
         $userId = $userIdRaw !== '' ? (int) $userIdRaw : null;
+        $adminId = $this->auth->userId();
 
+        if ($userId) {
+            $this->db->execute(
+                'UPDATE paintings SET awarded_to = :uid, awarded_at = NOW() WHERE id = :id',
+                [':uid' => $userId, ':id' => (int) $id]
+            );
+            $this->db->execute(
+                'INSERT INTO award_log (painting_id, user_id, awarded_by, action) VALUES (:pid, :uid, :aid, :action)',
+                [':pid' => (int) $id, ':uid' => $userId, ':aid' => $adminId, ':action' => 'awarded']
+            );
+            $_SESSION['admin_success'] = 'Painting awarded!';
+        } else {
+            $painting = $this->db->fetchOne('SELECT awarded_to FROM paintings WHERE id = :id', [':id' => (int) $id]);
+            if ($painting && $painting['awarded_to']) {
+                $this->db->execute(
+                    'INSERT INTO award_log (painting_id, user_id, awarded_by, action) VALUES (:pid, :uid, :aid, :action)',
+                    [':pid' => (int) $id, ':uid' => $painting['awarded_to'], ':aid' => $adminId, ':action' => 'unassigned']
+                );
+            }
+            $this->db->execute(
+                'UPDATE paintings SET awarded_to = NULL, awarded_at = NULL, tracking_number = NULL WHERE id = :id',
+                [':id' => (int) $id]
+            );
+            $_SESSION['admin_success'] = 'Painting unassigned.';
+        }
+
+        header('Location: /admin/painting/' . $id);
+        exit;
+    }
+
+    public function updateTracking(string $id): void
+    {
+        $this->auth->requireAdmin();
+
+        $tracking = trim($_POST['tracking_number'] ?? '');
         $this->db->execute(
-            'UPDATE paintings SET awarded_to = :uid WHERE id = :id',
-            [':uid' => $userId, ':id' => (int) $id]
+            'UPDATE paintings SET tracking_number = :tn WHERE id = :id',
+            [':tn' => $tracking !== '' ? $tracking : null, ':id' => (int) $id]
         );
 
-        $_SESSION['admin_success'] = 'Painting awarded!';
+        $_SESSION['admin_success'] = 'Tracking number updated.';
         header('Location: /admin/painting/' . $id);
         exit;
     }
