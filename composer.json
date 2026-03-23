@@ -2,8 +2,13 @@
     "name": "sartin/heirloom",
     "description": "Painting giveaway gallery",
     "type": "project",
+    "license": "Apache-2.0",
     "require": {
         "php": ">=8.1",
+        "ext-pdo": "*",
+        "ext-pdo_mysql": "*",
+        "ext-fileinfo": "*",
+        "ext-mbstring": "*",
         "league/oauth2-client": "^2.7",
         "league/oauth2-google": "^4.0",
         "phpmailer/phpmailer": "^6.9"
