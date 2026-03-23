@@ -190,9 +190,14 @@ class AuthController
     {
         $this->auth->requireLogin();
         $user = $this->auth->user();
+        $awardedPaintings = $this->db->fetchAll(
+            'SELECT p.title, p.filename, p.awarded_at, p.tracking_number FROM paintings p WHERE p.awarded_to = :uid ORDER BY p.awarded_at DESC',
+            [':uid' => $this->auth->userId()]
+        );
         Template::render('profile', [
             'auth' => $this->auth,
             'user' => $user,
+            'awardedPaintings' => $awardedPaintings,
             'success' => $_SESSION['auth_success'] ?? null,
             'error' => $_SESSION['auth_error'] ?? null,
         ]);

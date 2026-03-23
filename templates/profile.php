@@ -28,4 +28,32 @@
             <a href="/set-password">Change password</a>
         </p>
     </div>
+
+    <?php if (!empty($awardedPaintings)): ?>
+    <div class="form-card" style="margin-top:2rem;">
+        <h2 style="margin-bottom:1rem;">Awarded Paintings</h2>
+        <?php foreach ($awardedPaintings as $painting): ?>
+        <div style="display:flex;gap:1rem;align-items:flex-start;margin-bottom:1.5rem;padding-bottom:1.5rem;border-bottom:1px solid var(--border-color,#eee);">
+            <img src="/uploads/<?= \Heirloom\Template::escape($painting['filename']) ?>"
+                 alt="<?= \Heirloom\Template::escape($painting['title']) ?>"
+                 style="width:80px;height:80px;object-fit:cover;border-radius:4px;">
+            <div>
+                <p style="margin:0 0 0.25rem;"><strong><?= \Heirloom\Template::escape($painting['title']) ?></strong></p>
+                <?php if ($painting['awarded_at']): ?>
+                    <p style="margin:0 0 0.25rem;font-size:0.85rem;color:var(--text-muted);">
+                        Awarded <?= \Heirloom\Template::escape(date('M j, Y', strtotime($painting['awarded_at']))) ?>
+                    </p>
+                <?php endif; ?>
+                <?php if ($painting['tracking_number']): ?>
+                    <p style="margin:0;font-size:0.85rem;">
+                        Tracking: <strong><?= \Heirloom\Template::escape($painting['tracking_number']) ?></strong>
+                    </p>
+                <?php else: ?>
+                    <p style="margin:0;font-size:0.85rem;color:var(--text-muted);">No tracking number yet</p>
+                <?php endif; ?>
+            </div>
+        </div>
+        <?php endforeach; ?>
+    </div>
+    <?php endif; ?>
 </div>
