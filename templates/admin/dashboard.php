@@ -26,6 +26,7 @@ $sortIndicator = function (string $col) use ($sort, $dir): string {
 <?php if (empty($paintings)): ?>
     <p>No paintings found.</p>
 <?php else: ?>
+    <div class="admin-table-wrap">
     <table class="admin-table">
         <thead>
             <tr>
@@ -60,6 +61,7 @@ $sortIndicator = function (string $col) use ($sort, $dir): string {
             <?php endforeach; ?>
         </tbody>
     </table>
+    </div>
 
     <?php if ($totalPages > 1): ?>
         <?php $qs = http_build_query(['filter' => $filter, 'sort' => $sort, 'dir' => strtolower($dir)]); ?>
