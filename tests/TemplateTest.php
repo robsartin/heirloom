@@ -83,6 +83,111 @@ class TemplateTest extends TestCase
         $this->assertSame('Hello World!', $output);
     }
 
+    public function testSetGlobalMakesValueAvailableInTemplate(): void
+    {
+        $tmpDir = sys_get_temp_dir() . '/heirloom_tpl_' . uniqid();
+        mkdir($tmpDir);
+        file_put_contents($tmpDir . '/global_test.php', 'Email: <?= $contactEmail ?>');
+        file_put_contents($tmpDir . '/layout.php', '<?= $content ?>');
+
+        $ref = new \ReflectionClass(Template::class);
+        $baseProp = $ref->getProperty('baseDir');
+        $globalsProp = $ref->getProperty('globals');
+
+        $originalBase = $baseProp->getValue();
+        $originalGlobals = $globalsProp->getValue();
+
+        $baseProp->setValue(null, $tmpDir);
+        Template::setGlobal('contactEmail', 'gallery@example.com');
+
+        ob_start();
+        Template::render('global_test', ['noLayout' => true]);
+        $output = ob_get_clean();
+
+        $baseProp->setValue(null, $originalBase);
+        $globalsProp->setValue(null, $originalGlobals);
+
+        unlink($tmpDir . '/global_test.php');
+        unlink($tmpDir . '/layout.php');
+        rmdir($tmpDir);
+
+        $this->assertSame('Email: gallery@example.com', $output);
+    }
+
+    public function testContactEmailRenderedInLayoutFooter(): void
+    {
+        $tmpDir = sys_get_temp_dir() . '/heirloom_tpl_' . uniqid();
+        mkdir($tmpDir);
+        file_put_contents($tmpDir . '/blank.php', '');
+
+        // Create a minimal layout that mirrors the real footer contact email logic
+        $layoutContent = <<<'PHP'
+<?= $content ?><?php if (!empty($contactEmail)): ?><a href="mailto:<?= \Heirloom\Template::escape($contactEmail) ?>"><?= \Heirloom\Template::escape($contactEmail) ?></a><?php endif; ?>
+PHP;
+        file_put_contents($tmpDir . '/layout.php', $layoutContent);
+
+        $ref = new \ReflectionClass(Template::class);
+        $baseProp = $ref->getProperty('baseDir');
+        $globalsProp = $ref->getProperty('globals');
+
+        $originalBase = $baseProp->getValue();
+        $originalGlobals = $globalsProp->getValue();
+
+        $baseProp->setValue(null, $tmpDir);
+        Template::setGlobal('contactEmail', 'art@example.com');
+        Template::setGlobal('siteName', 'Test Gallery');
+
+        ob_start();
+        Template::render('blank', []);
+        $output = ob_get_clean();
+
+        $baseProp->setValue(null, $originalBase);
+        $globalsProp->setValue(null, $originalGlobals);
+
+        unlink($tmpDir . '/blank.php');
+        unlink($tmpDir . '/layout.php');
+        rmdir($tmpDir);
+
+        $this->assertStringContainsString('mailto:art@example.com', $output);
+        $this->assertStringContainsString('>art@example.com</a>', $output);
+    }
+
+    public function testContactEmailHiddenWhenEmpty(): void
+    {
+        $tmpDir = sys_get_temp_dir() . '/heirloom_tpl_' . uniqid();
+        mkdir($tmpDir);
+        file_put_contents($tmpDir . '/blank.php', '');
+
+        $layoutContent = <<<'PHP'
+<?= $content ?><?php if (!empty($contactEmail)): ?><a href="mailto:<?= \Heirloom\Template::escape($contactEmail) ?>"><?= \Heirloom\Template::escape($contactEmail) ?></a><?php endif; ?>
+PHP;
+        file_put_contents($tmpDir . '/layout.php', $layoutContent);
+
+        $ref = new \ReflectionClass(Template::class);
+        $baseProp = $ref->getProperty('baseDir');
+        $globalsProp = $ref->getProperty('globals');
+
+        $originalBase = $baseProp->getValue();
+        $originalGlobals = $globalsProp->getValue();
+
+        $baseProp->setValue(null, $tmpDir);
+        Template::setGlobal('contactEmail', '');
+        Template::setGlobal('siteName', 'Test Gallery');
+
+        ob_start();
+        Template::render('blank', []);
+        $output = ob_get_clean();
+
+        $baseProp->setValue(null, $originalBase);
+        $globalsProp->setValue(null, $originalGlobals);
+
+        unlink($tmpDir . '/blank.php');
+        unlink($tmpDir . '/layout.php');
+        rmdir($tmpDir);
+
+        $this->assertStringNotContainsString('mailto:', $output);
+    }
+
     public function testRenderWithLayoutWrapsContent(): void
     {
         $tmpDir = sys_get_temp_dir() . '/heirloom_tpl_' . uniqid();

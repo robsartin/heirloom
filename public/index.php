@@ -22,6 +22,7 @@ session_start();
 $db = Database::getInstance();
 $settings = new SiteSettings($db);
 Template::setGlobal('siteName', $settings->get('site_name', SiteSettings::DEFAULT_SITE_NAME));
+Template::setGlobal('contactEmail', $settings->get('contact_email', ''));
 $auth = new Auth($db);
 $auth->setSettings($settings);
 $mailHost = Config::get('MAIL_HOST');

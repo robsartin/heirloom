@@ -34,6 +34,9 @@
     <footer class="footer">
         <div class="container">
             <p><?= \Heirloom\Template::escape($siteName) ?> &mdash; Paintings looking for new homes</p>
+            <?php if (!empty($contactEmail)): ?>
+                <p>Contact: <a href="mailto:<?= \Heirloom\Template::escape($contactEmail) ?>"><?= \Heirloom\Template::escape($contactEmail) ?></a></p>
+            <?php endif; ?>
         </div>
     </footer>
 </body>
