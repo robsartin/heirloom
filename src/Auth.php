@@ -324,4 +324,44 @@ HTML;
             $this->sendEmail($this->buildLoserEmail($email, $paintingTitle));
         }
     }
+
+    /**
+     * Create an invite for a user: ensure they exist, create a magic link.
+     * Returns the magic link token.
+     */
+    public function createInvite(string $email, string $name = ''): string
+    {
+        $this->findOrCreateUserByEmail($email, $name);
+        return $this->createMagicLink($email);
+    }
+
+    /**
+     * Send an invitation email with a magic link.
+     */
+    public function sendInvite(string $email, string $token): bool
+    {
+        return $this->sendEmail($this->buildInviteEmail($email, $token));
+    }
+
+    /**
+     * Build an invitation email with a magic link for a new or existing user.
+     */
+    public function buildInviteEmail(string $email, string $token): EmailMessage
+    {
+        $url = Config::get('APP_URL') . '/auth/magic/' . $token;
+        $name = $this->siteName();
+        $expiry = $this->magicLinkExpiryMinutes();
+
+        $subject = "You've been invited to $name";
+        $htmlBody = <<<HTML
+<h2>You've been invited!</h2>
+<p>You've been invited to browse and claim paintings on <strong>$name</strong>.</p>
+<p>Click the link below to log in and set up your account. This link expires in $expiry minutes and can only be used once.</p>
+<p><a href="$url">Accept invitation and log in</a></p>
+<p>If you weren't expecting this, you can safely ignore this email.</p>
+HTML;
+        $textBody = "You've been invited to $name. Log in here: $url (expires in $expiry minutes, single use)";
+
+        return new EmailMessage($email, $subject, $htmlBody, $textBody);
+    }
 }
