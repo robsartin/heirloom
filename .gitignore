@@ -1,8 +1,30 @@
+# Dependencies
 /vendor/
+
+# Environment
+.env
+
+# Uploaded images
 /public/uploads/*
 !/public/uploads/.gitkeep
-.env
+
+# Database
+/data/
+
+# Testing
 .phpunit.cache/
 .phpunit.result.cache
+
+# IDEs
 .idea/
-/data/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# PHP
+*.phar

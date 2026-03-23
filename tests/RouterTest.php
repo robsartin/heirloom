@@ -125,4 +125,27 @@ class RouterTest extends TestCase
 
         $this->assertFalse($called);
     }
+
+    public function testRootSlashMatchesRootRoute(): void
+    {
+        $called = false;
+        $this->router->get('/', function () use (&$called) {
+            $called = true;
+        });
+
+        $this->router->dispatch('GET', '');
+        $this->assertTrue($called);
+    }
+
+    public function testArrayHandlerIsCalled(): void
+    {
+        $obj = new class {
+            public bool $called = false;
+            public function handle(): void { $this->called = true; }
+        };
+
+        $this->router->get('/test', [$obj, 'handle']);
+        $this->router->dispatch('GET', '/test');
+        $this->assertTrue($obj->called);
+    }
 }
