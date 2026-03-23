@@ -3,6 +3,9 @@ declare(strict_types=1);
 
 namespace Heirloom;
 
+/**
+ * Provides per-session CSRF token generation, validation, and hidden-field rendering.
+ */
 class Csrf
 {
     public static function generateToken(): string

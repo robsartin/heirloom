@@ -3,6 +3,10 @@ declare(strict_types=1);
 
 namespace Heirloom;
 
+/**
+ * Handles authentication, session management, magic-link login, and transactional email
+ * composition/delivery for user-facing auth flows and painting award notifications.
+ */
 class Auth
 {
     private ?array $cachedUser = null;
@@ -90,6 +94,10 @@ class Auth
         session_regenerate_id(true);
     }
 
+    /**
+     * Return and clear the post-login redirect URL stored in the session.
+     * Falls back to '/' if none is set or the value looks unsafe.
+     */
     public function consumeRedirect(): string
     {
         $redirect = $_SESSION['redirect_after_login'] ?? '/';
@@ -161,6 +169,9 @@ class Auth
         );
     }
 
+    /**
+     * @return array<string, mixed>|null The user row if credentials are valid, null otherwise
+     */
     public function attemptPasswordLogin(string $email, string $password): ?array
     {
         $user = $this->fetchUserByEmail($email);
@@ -178,6 +189,9 @@ class Auth
         return $this->fetchUserByEmail($email);
     }
 
+    /**
+     * @return array<string, mixed> The existing or newly-created user row
+     */
     public function findOrCreateUserByEmail(string $email, string $name = ''): array
     {
         $email = self::normalizeEmail($email);
@@ -195,6 +209,11 @@ class Auth
         );
     }
 
+    /**
+     * Generate a one-time-use magic-link token and persist it for the given email.
+     *
+     * @return string The hex token to embed in the login URL
+     */
     public function createMagicLink(string $email): string
     {
         $token = bin2hex(random_bytes(32));
@@ -205,6 +224,11 @@ class Auth
         return $token;
     }
 
+    /**
+     * Validate and consume a magic-link token, marking it as used.
+     *
+     * @return string|null The email address associated with the token, or null if invalid/expired
+     */
     public function consumeMagicLink(string $token): ?string
     {
         $minutes = (int) $this->magicLinkExpiryMinutes();

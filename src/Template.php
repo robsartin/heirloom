@@ -3,6 +3,10 @@ declare(strict_types=1);
 
 namespace Heirloom;
 
+/**
+ * Minimal PHP template renderer that extracts data into scope, captures output,
+ * and wraps it in a shared layout unless explicitly opted out via $noLayout.
+ */
 class Template
 {
     private static string $baseDir = __DIR__ . '/../templates';
@@ -18,6 +22,11 @@ class Template
         return self::$globals;
     }
 
+    /**
+     * @param string $template Template name relative to the templates directory (without .php)
+     * @param array<string, mixed> $data Variables extracted into the template scope.
+     *                                   Pass 'noLayout' => true to skip the layout wrapper.
+     */
     public static function render(string $template, array $data = []): void
     {
         $data = array_merge(self::$globals, $data);

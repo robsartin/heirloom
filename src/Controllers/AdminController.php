@@ -9,6 +9,10 @@ use Heirloom\SiteSettings;
 use Heirloom\Template;
 use Heirloom\Thumbnail;
 
+/**
+ * Admin-only controller for the dashboard, painting management (upload, edit, award, delete),
+ * CSV data exports, and site settings management.
+ */
 class AdminController
 {
     public function __construct(private Database $db, private Auth $auth, private SiteSettings $settings) {}

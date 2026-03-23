@@ -11,6 +11,10 @@ use Heirloom\SiteSettings;
 use Heirloom\Template;
 use League\OAuth2\Client\Provider\Google;
 
+/**
+ * Handles all public-facing authentication routes: login (password and magic-link),
+ * registration, Google OAuth, password management, and user profile updates.
+ */
 class AuthController
 {
     private RateLimiter $rateLimiter;

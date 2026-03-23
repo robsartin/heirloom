@@ -9,6 +9,10 @@ use Heirloom\Database;
 use Heirloom\SiteSettings;
 use Heirloom\Template;
 
+/**
+ * Public gallery controller: lists available paintings with search/sort/pagination,
+ * shows painting detail pages, handles interest toggling, and generates the sitemap.
+ */
 class GalleryController
 {
     public function __construct(private Database $db, private Auth $auth, private SiteSettings $settings) {}
