@@ -39,6 +39,9 @@ if ($mailHost) {
 } else {
     $auth->setMailer(new LogMailer());
 }
+$auth->checkSessionTimeout();
+$auth->touchActivity();
+
 $router = new Router();
 
 $gallery = new GalleryController($db, $auth, $settings);

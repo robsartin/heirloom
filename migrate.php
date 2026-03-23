@@ -136,6 +136,7 @@ $defaults = [
     ['admin_per_page', '20', 'Admin Items Per Page', 'Number of paintings shown per page in the admin dashboard.'],
     ['registration_open', '1', 'Registration Open', 'Set to 0 to disable new user registration.'],
     ['contact_email', '', 'Contact Email', 'Shown to users who need to reach the site owner. Leave blank to hide.'],
+    ['session_timeout_minutes', '120', 'Session Timeout (minutes)', 'Idle sessions are automatically logged out after this many minutes of inactivity.'],
 ];
 foreach ($defaults as [$key, $value, $label, $desc]) {
     $stmt = $pdo->prepare('SELECT 1 FROM site_settings WHERE setting_key = :k');
