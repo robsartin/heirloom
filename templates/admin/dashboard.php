@@ -13,6 +13,34 @@ $sortIndicator = function (string $col) use ($sort, $dir): string {
 ?>
 
 <h1>Admin Dashboard</h1>
+
+<div class="stats-bar">
+    <div class="stat-card">
+        <span class="stat-value"><?= $stats['total_paintings'] ?></span>
+        <span class="stat-label">Total Paintings</span>
+    </div>
+    <div class="stat-card">
+        <span class="stat-value"><?= $stats['available'] ?></span>
+        <span class="stat-label">Available</span>
+    </div>
+    <div class="stat-card">
+        <span class="stat-value"><?= $stats['awarded'] ?></span>
+        <span class="stat-label">Awarded</span>
+    </div>
+    <div class="stat-card">
+        <span class="stat-value"><?= $stats['total_users'] ?></span>
+        <span class="stat-label">Users</span>
+    </div>
+    <div class="stat-card">
+        <span class="stat-value"><?= $stats['total_interests'] ?></span>
+        <span class="stat-label">Interests</span>
+    </div>
+    <div class="stat-card stat-card-wide">
+        <span class="stat-value stat-value-sm"><?= $stats['most_wanted'] ? Template::escape($stats['most_wanted']) : '&mdash;' ?></span>
+        <span class="stat-label">Most Wanted</span>
+    </div>
+</div>
+
 <p style="color:var(--text-muted);margin-bottom:1rem;"><?= $total ?> paintings (<?= $filter ?>)</p>
 
 <div class="filter-bar">

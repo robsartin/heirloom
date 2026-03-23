@@ -58,6 +58,25 @@ class AdminController
             [':limit' => $perPage, ':offset' => $offset]
         );
 
+        $stats = [
+            'total_paintings' => (int) $this->db->scalar('SELECT COUNT(*) FROM paintings'),
+            'available' => (int) $this->db->scalar('SELECT COUNT(*) FROM paintings WHERE awarded_to IS NULL'),
+            'awarded' => (int) $this->db->scalar('SELECT COUNT(*) FROM paintings WHERE awarded_to IS NOT NULL'),
+            'total_users' => (int) $this->db->scalar('SELECT COUNT(*) FROM users'),
+            'total_interests' => (int) $this->db->scalar('SELECT COUNT(*) FROM interests'),
+        ];
+
+        $mostWanted = $this->db->fetchOne(
+            'SELECT p.title, COUNT(i.id) AS cnt
+             FROM paintings p
+             JOIN interests i ON i.painting_id = p.id
+             WHERE p.awarded_to IS NULL
+             GROUP BY p.id
+             ORDER BY cnt DESC
+             LIMIT 1'
+        );
+        $stats['most_wanted'] = $mostWanted['title'] ?? null;
+
         Template::render('admin/dashboard', [
             'paintings' => $paintings,
             'page' => $page,
@@ -66,6 +85,7 @@ class AdminController
             'filter' => $filter,
             'sort' => $sort,
             'dir' => $dir,
+            'stats' => $stats,
             'auth' => $this->auth,
         ]);
     }
