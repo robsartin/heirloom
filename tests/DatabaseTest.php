@@ -94,6 +94,23 @@ class DatabaseTest extends TestCase
         $this->assertCount(1, $rows);
     }
 
+    public function testQueryReturnsPdoStatement(): void
+    {
+        $this->db->execute('INSERT INTO items (name, value) VALUES (:n, :v)', [':n' => 'q', ':v' => 'test']);
+        $stmt = $this->db->query('SELECT * FROM items WHERE name = :n', [':n' => 'q']);
+
+        $this->assertInstanceOf(\PDOStatement::class, $stmt);
+        $row = $stmt->fetch();
+        $this->assertSame('q', $row['name']);
+    }
+
+    public function testIntegerValuesHandled(): void
+    {
+        $this->db->execute('INSERT INTO items (name, value) VALUES (:n, :v)', [':n' => 'int', ':v' => '42']);
+        $count = $this->db->scalar('SELECT COUNT(*) FROM items WHERE value = :v', [':v' => '42']);
+        $this->assertEquals(1, $count);
+    }
+
     public function testNullValueHandled(): void
     {
         $this->db->execute('INSERT INTO items (name, value) VALUES (:n, :v)', [':n' => 'nil', ':v' => null]);
