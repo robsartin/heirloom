@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /auth/
+Disallow: /profile
+Disallow: /set-password
+Disallow: /my-paintings
+
+Sitemap: http://localhost:8080/sitemap.xml
