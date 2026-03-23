@@ -6,13 +6,19 @@ namespace Heirloom\Controllers;
 use Heirloom\Auth;
 use Heirloom\Config;
 use Heirloom\Database;
+use Heirloom\RateLimiter;
 use Heirloom\SiteSettings;
 use Heirloom\Template;
 use League\OAuth2\Client\Provider\Google;
 
 class AuthController
 {
-    public function __construct(private Database $db, private Auth $auth, private SiteSettings $settings) {}
+    private RateLimiter $rateLimiter;
+
+    public function __construct(private Database $db, private Auth $auth, private SiteSettings $settings)
+    {
+        $this->rateLimiter = new RateLimiter($db);
+    }
 
     public function loginForm(): void
     {
@@ -39,20 +45,29 @@ class AuthController
             exit;
         }
 
-        // If password provided, attempt password login
+        $identifier = Auth::normalizeEmail($email);
+        if (!$this->rateLimiter->isAllowed($identifier)) {
+            $remaining = $this->rateLimiter->remainingAttempts($identifier);
+            $_SESSION['auth_error'] = 'Too many login attempts. Please try again in 15 minutes.';
+            header('Location: /login');
+            exit;
+        }
+
         if ($password !== '') {
             $user = $this->auth->attemptPasswordLogin($email, $password);
             if ($user) {
+                $this->rateLimiter->clear($identifier);
                 $this->auth->loginUser((int) $user['id']);
                 header('Location: ' . $this->auth->consumeRedirect());
                 exit;
             }
+            $this->rateLimiter->record($identifier);
             $_SESSION['auth_error'] = 'Invalid email or password.';
             header('Location: /login');
             exit;
         }
 
-        // No password = send magic link
+        $this->rateLimiter->record($identifier);
         $token = $this->auth->createMagicLink($email);
         $sent = $this->auth->sendMagicLink($email, $token);
 
@@ -103,16 +118,21 @@ class AuthController
             exit;
         }
 
+        if (!$this->rateLimiter->isAllowed($email)) {
+            $_SESSION['auth_error'] = 'Too many attempts. Please try again in 15 minutes.';
+            header('Location: /register');
+            exit;
+        }
+
         if (!$name) {
             $_SESSION['auth_error'] = 'Name is required.';
             header('Location: /register');
             exit;
         }
 
-        // Create user if not exists
         $this->auth->findOrCreateUserByEmail($email, $name);
+        $this->rateLimiter->record($email);
 
-        // Send magic link
         $token = $this->auth->createMagicLink($email);
         $sent = $this->auth->sendMagicLink($email, $token);
 
