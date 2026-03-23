@@ -3,5 +3,5 @@ suites:
         namespace: Heirloom
         psr4_prefix: Heirloom
         src_path: src
-        spec_path: spec
+        spec_path: .
         spec_prefix: spec

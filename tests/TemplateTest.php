@@ -43,4 +43,69 @@ class TemplateTest extends TestCase
     {
         $this->assertSame('cafe\u{0301}', Template::escape('cafe\u{0301}'));
     }
+
+    public function testEscapeHandlesNestedHtmlEntities(): void
+    {
+        $this->assertSame('&amp;amp;', Template::escape('&amp;'));
+    }
+
+    public function testEscapeDoesNotDoubleEscape(): void
+    {
+        $once = Template::escape('<b>');
+        $twice = Template::escape($once);
+        $this->assertSame('&amp;lt;b&amp;gt;', $twice);
+    }
+
+    public function testRenderOutputsTemplateContent(): void
+    {
+        $tmpDir = sys_get_temp_dir() . '/heirloom_tpl_' . uniqid();
+        mkdir($tmpDir);
+        file_put_contents($tmpDir . '/test.php', 'Hello <?= $name ?>!');
+        file_put_contents($tmpDir . '/layout.php', '<?= $content ?>');
+
+        // Use reflection to temporarily override baseDir
+        $ref = new \ReflectionClass(Template::class);
+        $prop = $ref->getProperty('baseDir');
+
+        $original = $prop->getValue();
+        $prop->setValue(null, $tmpDir);
+
+        ob_start();
+        Template::render('test', ['name' => 'World', 'noLayout' => true]);
+        $output = ob_get_clean();
+
+        $prop->setValue(null, $original);
+
+        unlink($tmpDir . '/test.php');
+        unlink($tmpDir . '/layout.php');
+        rmdir($tmpDir);
+
+        $this->assertSame('Hello World!', $output);
+    }
+
+    public function testRenderWithLayoutWrapsContent(): void
+    {
+        $tmpDir = sys_get_temp_dir() . '/heirloom_tpl_' . uniqid();
+        mkdir($tmpDir);
+        file_put_contents($tmpDir . '/inner.php', 'INNER');
+        file_put_contents($tmpDir . '/layout.php', '<div><?= $content ?></div>');
+
+        $ref = new \ReflectionClass(Template::class);
+        $prop = $ref->getProperty('baseDir');
+
+        $original = $prop->getValue();
+        $prop->setValue(null, $tmpDir);
+
+        ob_start();
+        Template::render('inner', []);
+        $output = ob_get_clean();
+
+        $prop->setValue(null, $original);
+
+        unlink($tmpDir . '/inner.php');
+        unlink($tmpDir . '/layout.php');
+        rmdir($tmpDir);
+
+        $this->assertSame('<div>INNER</div>', $output);
+    }
 }

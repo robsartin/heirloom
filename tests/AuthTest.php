@@ -331,4 +331,71 @@ class AuthTest extends TestCase
         );
         $this->assertNull($link);
     }
+
+    // --- createMagicLink normalizes email ---
+
+    public function testCreateMagicLinkNormalizesEmail(): void
+    {
+        $token = $this->auth->createMagicLink('  UPPER@EXAMPLE.COM  ');
+
+        $row = $this->db->fetchOne(
+            'SELECT * FROM magic_links WHERE token = :t',
+            [':t' => $token]
+        );
+        $this->assertSame('upper@example.com', $row['email']);
+    }
+
+    // --- sendMagicLink dev fallback ---
+
+    public function testSendMagicLinkReturnsTrueWithoutMailHost(): void
+    {
+        // With no MAIL_HOST configured, sendMagicLink logs and returns true
+        $result = $this->auth->sendMagicLink('test@example.com', 'sometoken');
+        $this->assertTrue($result);
+    }
+
+    // --- user returns null for nonexistent session user_id ---
+
+    public function testUserReturnsNullForNonexistentUserId(): void
+    {
+        $_SESSION['user_id'] = 99999;
+        $this->assertNull($this->auth->user());
+    }
+
+    // --- isAdmin with nonexistent user ---
+
+    public function testIsAdminReturnsFalseForNonexistentUser(): void
+    {
+        $_SESSION['user_id'] = 99999;
+        $this->assertFalse($this->auth->isAdmin());
+    }
+
+    // --- findOrCreateUserByEmail returns same user on second call ---
+
+    public function testFindOrCreateUserByEmailIsIdempotent(): void
+    {
+        $user1 = $this->auth->findOrCreateUserByEmail('idempotent@example.com', 'First');
+        $user2 = $this->auth->findOrCreateUserByEmail('idempotent@example.com', 'Second');
+
+        $this->assertSame($user1['id'], $user2['id']);
+        $this->assertSame('First', $user2['name']); // name not overwritten
+    }
+
+    // --- attemptPasswordLogin returns full user row ---
+
+    public function testAttemptPasswordLoginReturnsFullUserRow(): void
+    {
+        $hash = password_hash('pass', PASSWORD_DEFAULT);
+        $this->db->execute(
+            "INSERT INTO users (email, name, password_hash, is_admin) VALUES (:e, :n, :h, 1)",
+            [':e' => 'full@example.com', ':n' => 'Full', ':h' => $hash]
+        );
+
+        $user = $this->auth->attemptPasswordLogin('full@example.com', 'pass');
+        $this->assertArrayHasKey('id', $user);
+        $this->assertArrayHasKey('email', $user);
+        $this->assertArrayHasKey('name', $user);
+        $this->assertArrayHasKey('is_admin', $user);
+        $this->assertArrayHasKey('password_hash', $user);
+    }
 }
