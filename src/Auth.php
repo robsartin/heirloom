@@ -25,7 +25,7 @@ class Auth
 
     private function siteName(): string
     {
-        return $this->settings ? $this->settings->get('site_name', 'Heirloom Gallery') : 'Heirloom Gallery';
+        return $this->settings ? $this->settings->get('site_name', SiteSettings::DEFAULT_SITE_NAME) : SiteSettings::DEFAULT_SITE_NAME;
     }
 
     public function user(): ?array

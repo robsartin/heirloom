@@ -26,7 +26,7 @@ class Template
             echo $content;
         } else {
             $auth = $data['auth'] ?? null;
-            $siteName = $data['siteName'] ?? 'Heirloom Gallery';
+            $siteName = $data['siteName'] ?? SiteSettings::DEFAULT_SITE_NAME;
             require self::$baseDir . '/layout.php';
         }
     }

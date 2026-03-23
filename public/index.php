@@ -19,7 +19,7 @@ session_start();
 
 $db = Database::getInstance();
 $settings = new SiteSettings($db);
-Template::setGlobal('siteName', $settings->get('site_name', 'Heirloom Gallery'));
+Template::setGlobal('siteName', $settings->get('site_name', SiteSettings::DEFAULT_SITE_NAME));
 $auth = new Auth($db);
 $auth->setSettings($settings);
 $router = new Router();
