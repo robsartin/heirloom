@@ -105,6 +105,14 @@ class Auth
         return $user;
     }
 
+    public function findUserByEmail(string $email): ?array
+    {
+        return $this->db->fetchOne(
+            'SELECT * FROM users WHERE email = :email',
+            [':email' => self::normalizeEmail($email)]
+        );
+    }
+
     public function findOrCreateUserByEmail(string $email, string $name = ''): array
     {
         $email = self::normalizeEmail($email);

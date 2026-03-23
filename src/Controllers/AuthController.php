@@ -195,11 +195,15 @@ class AuthController
             $token = $provider->getAccessToken('authorization_code', ['code' => $_GET['code']]);
             $googleUser = $provider->getResourceOwner($token);
             $email = strtolower($googleUser->getEmail());
-            $name = $googleUser->getName() ?? '';
 
-            $user = $this->auth->findOrCreateUserByEmail($email, $name);
+            $user = $this->auth->findUserByEmail($email);
+            if (!$user) {
+                $_SESSION['auth_error'] = 'No account found for that Google email. Please register first.';
+                header('Location: /register');
+                exit;
+            }
+
             $this->auth->loginUser((int) $user['id']);
-
             header('Location: ' . $this->auth->consumeRedirect());
             exit;
         } catch (\Exception $e) {

@@ -170,6 +170,36 @@ class AuthTest extends TestCase
         $this->assertFalse($this->auth->isAdmin());
     }
 
+    // --- findUserByEmail ---
+
+    public function testFindUserByEmailReturnsUserWhenExists(): void
+    {
+        $this->db->execute(
+            "INSERT INTO users (email, name) VALUES (:e, :n)",
+            [':e' => 'found@example.com', ':n' => 'Found']
+        );
+
+        $user = $this->auth->findUserByEmail('found@example.com');
+        $this->assertNotNull($user);
+        $this->assertSame('found@example.com', $user['email']);
+    }
+
+    public function testFindUserByEmailReturnsNullWhenNotExists(): void
+    {
+        $this->assertNull($this->auth->findUserByEmail('ghost@example.com'));
+    }
+
+    public function testFindUserByEmailNormalizesEmail(): void
+    {
+        $this->db->execute(
+            "INSERT INTO users (email, name) VALUES (:e, :n)",
+            [':e' => 'normalize@example.com', ':n' => 'Norm']
+        );
+
+        $user = $this->auth->findUserByEmail('  NORMALIZE@EXAMPLE.COM  ');
+        $this->assertNotNull($user);
+    }
+
     // --- attemptPasswordLogin ---
 
     public function testAttemptPasswordLoginSucceedsWithCorrectCredentials(): void

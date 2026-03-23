@@ -5,11 +5,9 @@
         <div class="alert alert-error"><?= \Heirloom\Template::escape($error) ?></div>
     <?php endif; ?>
 
+    <p style="margin-bottom:1rem;color:var(--text-muted)">Enter your name and email to receive a login link.</p>
+
     <div class="form-card">
-        <a href="/auth/google" class="btn btn-google">Sign up with Google</a>
-
-        <div class="divider">or use email</div>
-
         <form method="POST" action="/register">
             <div class="form-group">
                 <label for="name">Your Name</label>
