@@ -9,20 +9,13 @@ graph TB
     end
 
     subgraph Server["PHP Application"]
-        FC[public/index.php<br/>Front Controller]
+        FC[public/index.php\nFront Controller]
         Router[Router]
         Auth[Auth]
-        FC --> Router
-        Router --> GC[GalleryController]
-        Router --> AC[AuthController]
-        Router --> ADC[AdminController]
-        GC --> Auth
-        AC --> Auth
-        ADC --> Auth
-        GC --> DB[Database PDO]
-        AC --> DB
-        ADC --> DB
-        Auth --> DB
+        GC[GalleryController]
+        AC[AuthController]
+        ADC[AdminController]
+        DB[Database PDO]
     end
 
     subgraph External
@@ -33,10 +26,21 @@ graph TB
     end
 
     Browser -->|HTTP| FC
+    FC --> Router
+    Router --> GC
+    Router --> AC
+    Router --> ADC
+    GC --> Auth
+    AC --> Auth
+    ADC --> Auth
+    GC --> DB
+    AC --> DB
+    ADC --> DB
+    Auth --> DB
     DB --> MySQL
     AC -->|OAuth2| Google
     Auth -->|PHPMailer| SMTP
-    ADC -->|move_uploaded_file| Uploads
+    ADC -->|upload| Uploads
     Browser -->|static files| Uploads
 ```
 
@@ -91,7 +95,7 @@ sequenceDiagram
     Note over Mail: Link: /auth/magic/{token}<br/>Expires: 1 hour<br/>Single use
 
     U->>App: GET /auth/magic/{token}
-    App->>DB: SELECT magic_links WHERE token AND used=0 AND <1hr old
+    App->>DB: SELECT magic_links WHERE token AND used=0 AND age under 1hr
     alt Valid token
         App->>DB: UPDATE magic_links SET used=1
         App->>DB: findOrCreateUserByEmail(email)
@@ -151,11 +155,15 @@ sequenceDiagram
     App->>App: Verify state matches session
     App->>G: Exchange code for access token
     G-->>App: Access token
-    App->>G: Get user profile (email, name)
-    G-->>App: {email, name}
-    App->>DB: findOrCreateUserByEmail(email, name)
-    App->>App: loginUser(userId)
-    App-->>U: Redirect to saved URL or /
+    App->>G: Get user profile email and name
+    G-->>App: email and name
+    App->>DB: findUserByEmail(email)
+    alt User exists
+        App->>App: loginUser(userId)
+        App-->>U: Redirect to saved URL or /
+    else No account found
+        App-->>U: Redirect to /register with error
+    end
 ```
 
 ### Magic Link Token Lifecycle
@@ -236,59 +244,42 @@ erDiagram
 
 ## Route Map
 
+### Gallery Routes (GalleryController)
+
 ```mermaid
 graph LR
-    subgraph Public
-        GET_ROOT["GET /"]
-        GET_PAINTING["GET /painting/{id}"]
-        POST_INTEREST["POST /painting/{id}/interest"]
-    end
+    GET_ROOT["GET /"] --> GC[GalleryController::index]
+    GET_PAINTING["GET /painting/id"] --> GC2[GalleryController::show]
+    POST_INTEREST["POST /painting/id/interest"] --> GC3[GalleryController::expressInterest]
+```
 
-    subgraph Auth
-        GET_LOGIN["GET /login"]
-        POST_LOGIN["POST /login"]
-        GET_REGISTER["GET /register"]
-        POST_REGISTER["POST /register"]
-        GET_MAGIC["GET /auth/magic/{token}"]
-        GET_GOOGLE["GET /auth/google"]
-        GET_GCALLBACK["GET /auth/google/callback"]
-        GET_LOGOUT["GET /logout"]
-        GET_SETPW["GET /set-password"]
-        POST_SETPW["POST /set-password"]
-    end
+### Auth Routes (AuthController)
 
-    subgraph Admin
-        GET_ADMIN["GET /admin"]
-        GET_UPLOAD["GET /admin/upload"]
-        POST_UPLOAD["POST /admin/upload"]
-        GET_MANAGE["GET /admin/painting/{id}"]
-        POST_EDIT["POST /admin/painting/{id}/edit"]
-        POST_AWARD["POST /admin/painting/{id}/award"]
-        POST_DELETE["POST /admin/painting/{id}/delete"]
-    end
+```mermaid
+graph LR
+    GET_LOGIN["GET /login"] --> AC1[loginForm]
+    POST_LOGIN["POST /login"] --> AC2[login]
+    GET_REG["GET /register"] --> AC3[registerForm]
+    POST_REG["POST /register"] --> AC4[register]
+    GET_MAGIC["GET /auth/magic/token"] --> AC5[magicLogin]
+    GET_GOOGLE["GET /auth/google"] --> AC6[googleRedirect]
+    GET_GCALLBACK["GET /auth/google/callback"] --> AC7[googleCallback]
+    GET_LOGOUT["GET /logout"] --> AC8[logout]
+    GET_SETPW["GET /set-password"] --> AC9[setPasswordForm]
+    POST_SETPW["POST /set-password"] --> AC10[setPassword]
+```
 
-    GET_ROOT --> GalleryController
-    GET_PAINTING --> GalleryController
-    POST_INTEREST --> GalleryController
+### Admin Routes (AdminController)
 
-    GET_LOGIN --> AuthController
-    POST_LOGIN --> AuthController
-    GET_REGISTER --> AuthController
-    POST_REGISTER --> AuthController
-    GET_MAGIC --> AuthController
-    GET_GOOGLE --> AuthController
-    GET_GCALLBACK --> AuthController
-    GET_LOGOUT --> AuthController
-    GET_SETPW --> AuthController
-    POST_SETPW --> AuthController
-
-    GET_ADMIN --> AdminController
-    GET_UPLOAD --> AdminController
-    POST_UPLOAD --> AdminController
-    GET_MANAGE --> AdminController
-    POST_EDIT --> AdminController
-    POST_AWARD --> AdminController
-    POST_DELETE --> AdminController
+```mermaid
+graph LR
+    GET_ADMIN["GET /admin"] --> AD1[dashboard]
+    GET_UPLOAD["GET /admin/upload"] --> AD2[uploadForm]
+    POST_UPLOAD["POST /admin/upload"] --> AD3[upload]
+    GET_MANAGE["GET /admin/painting/id"] --> AD4[managePainting]
+    POST_EDIT["POST /admin/painting/id/edit"] --> AD5[edit]
+    POST_AWARD["POST /admin/painting/id/award"] --> AD6[award]
+    POST_DELETE["POST /admin/painting/id/delete"] --> AD7[delete]
 ```
 
 ## Project Structure
