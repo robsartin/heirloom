@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Heirloom\Controllers;
 
 use Heirloom\Auth;
+use Heirloom\Config;
 use Heirloom\Database;
 use Heirloom\SiteSettings;
 use Heirloom\Template;
@@ -63,6 +64,8 @@ class GalleryController
             }
         }
 
+        Template::setGlobal('ogTitle', $this->settings->get('site_name', SiteSettings::DEFAULT_SITE_NAME));
+
         Template::render('gallery', [
             'paintings' => $paintings,
             'page' => $page,
@@ -99,6 +102,10 @@ class GalleryController
             'SELECT COUNT(*) FROM interests WHERE painting_id = :pid',
             [':pid' => (int) $id]
         );
+
+        Template::setGlobal('ogTitle', $painting['title']);
+        Template::setGlobal('ogDescription', $painting['description'] ?? '');
+        Template::setGlobal('ogImage', Config::get('APP_URL') . '/uploads/' . $painting['filename']);
 
         Template::render('painting', [
             'painting' => $painting,

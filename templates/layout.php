@@ -4,6 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= \Heirloom\Template::escape($siteName) ?></title>
+    <?php if (!empty($ogTitle)): ?>
+    <meta property="og:title" content="<?= \Heirloom\Template::escape($ogTitle) ?>">
+    <meta property="og:description" content="<?= \Heirloom\Template::escape($ogDescription ?? '') ?>">
+    <meta property="og:image" content="<?= \Heirloom\Template::escape($ogImage ?? '') ?>">
+    <meta property="og:type" content="website">
+    <?php endif; ?>
     <link rel="stylesheet" href="/css/style.css?v=1">
 </head>
 <body>
