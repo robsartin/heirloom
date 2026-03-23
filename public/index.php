@@ -92,6 +92,8 @@ $router->get('/admin/export/paintings', [$admin, 'exportPaintings']);
 $router->get('/admin/export/users', [$admin, 'exportUsers']);
 $router->get('/admin/settings', [$admin, 'settingsForm']);
 $router->post('/admin/settings', [$admin, 'updateSettings']);
+$router->get('/admin/invite', [$admin, 'inviteForm']);
+$router->post('/admin/invite', [$admin, 'invite']);
 
 // CSRF validation for all POST requests
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {

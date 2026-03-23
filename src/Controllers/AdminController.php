@@ -514,4 +514,43 @@ class AdminController
         header('Location: /admin/settings');
         exit;
     }
+
+    public function inviteForm(): void
+    {
+        $this->auth->requireAdmin();
+        Template::render('admin/invite', [
+            'auth' => $this->auth,
+            'success' => $_SESSION['admin_success'] ?? null,
+            'error' => $_SESSION['admin_error'] ?? null,
+            'inviteEmail' => $_SESSION['invite_email'] ?? null,
+        ]);
+        unset($_SESSION['admin_success'], $_SESSION['admin_error'], $_SESSION['invite_email']);
+    }
+
+    public function invite(): void
+    {
+        $this->auth->requireAdmin();
+
+        $email = Auth::normalizeEmail($_POST['email'] ?? '');
+        $name = trim($_POST['name'] ?? '');
+
+        if (!$email || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $_SESSION['admin_error'] = 'Valid email is required.';
+            header('Location: /admin/invite');
+            exit;
+        }
+
+        $token = $this->auth->createInvite($email, $name);
+        $emailMessage = $this->auth->buildInviteEmail($email, $token);
+
+        $_SESSION['admin_success'] = 'Invite created for ' . $email;
+        $_SESSION['invite_email'] = [
+            'to' => $emailMessage->to,
+            'subject' => $emailMessage->subject,
+            'htmlBody' => $emailMessage->htmlBody,
+            'textBody' => $emailMessage->textBody,
+        ];
+        header('Location: /admin/invite');
+        exit;
+    }
 }
