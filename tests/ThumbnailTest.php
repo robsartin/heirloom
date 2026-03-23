@@ -123,4 +123,24 @@ class ThumbnailTest extends TestCase
         $this->assertSame(200, $info[0]);
         $this->assertSame(150, $info[1]);
     }
+
+    public function testThumbOrOriginalReturnsThumbWhenExists(): void
+    {
+        $original = $this->tmpDir . '/abc123.jpg';
+        $thumb = $this->tmpDir . '/abc123_thumb.jpg';
+        file_put_contents($original, 'original');
+        file_put_contents($thumb, 'thumb');
+
+        $result = Thumbnail::thumbOrOriginal('abc123.jpg', $this->tmpDir . '/');
+        $this->assertSame('abc123_thumb.jpg', $result);
+    }
+
+    public function testThumbOrOriginalFallsBackToOriginal(): void
+    {
+        $original = $this->tmpDir . '/noThumb.png';
+        file_put_contents($original, 'original');
+
+        $result = Thumbnail::thumbOrOriginal('noThumb.png', $this->tmpDir . '/');
+        $this->assertSame('noThumb.png', $result);
+    }
 }

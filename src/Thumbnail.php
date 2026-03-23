@@ -71,4 +71,19 @@ class Thumbnail
         $base = pathinfo($filename, PATHINFO_FILENAME);
         return $base . '_thumb.' . $ext;
     }
+
+    /**
+     * Return the thumbnail filename if the file exists on disk, otherwise the original.
+     */
+    public static function thumbOrOriginal(string $filename, string $uploadDir = ''): string
+    {
+        if ($uploadDir === '') {
+            $uploadDir = dirname(__DIR__) . '/public/uploads/';
+        }
+        $thumb = self::thumbFilename($filename);
+        if (file_exists($uploadDir . $thumb)) {
+            return $thumb;
+        }
+        return $filename;
+    }
 }
