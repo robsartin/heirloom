@@ -1,10 +1,33 @@
 <?php use Heirloom\Template;
-use Heirloom\Thumbnail; ?>
+use Heirloom\Thumbnail;
+
+$paginationParams = [];
+if ($search !== '') {
+    $paginationParams['q'] = $search;
+}
+if ($sort !== 'newest') {
+    $paginationParams['sort'] = $sort;
+}
+?>
 
 <div class="gallery-header">
     <h1>Paintings Available</h1>
     <p><?= $total ?> painting<?= $total !== 1 ? 's' : '' ?> looking for a new home</p>
 </div>
+
+<form method="get" action="/gallery" class="gallery-search-form">
+    <input type="text"
+           name="q"
+           value="<?= Template::escape($search) ?>"
+           placeholder="Search by title or description..."
+           aria-label="Search paintings">
+    <select name="sort" aria-label="Sort paintings">
+        <option value="newest"<?= $sort === 'newest' ? ' selected' : '' ?>>Newest first</option>
+        <option value="wanted"<?= $sort === 'wanted' ? ' selected' : '' ?>>Most wanted</option>
+        <option value="title"<?= $sort === 'title' ? ' selected' : '' ?>>Title A-Z</option>
+    </select>
+    <button type="submit">Search</button>
+</form>
 
 <?php if (empty($paintings)): ?>
     <p>No paintings available right now. Check back soon!</p>
@@ -32,9 +55,14 @@ use Heirloom\Thumbnail; ?>
     </div>
 
     <?php if ($totalPages > 1): ?>
+        <?php
+        $pageUrl = function (int $p) use ($paginationParams): string {
+            return '?' . http_build_query(array_merge($paginationParams, ['page' => $p]));
+        };
+        ?>
         <div class="pagination">
             <?php if ($page > 1): ?>
-                <a href="?page=<?= $page - 1 ?>">&laquo; Prev</a>
+                <a href="<?= $pageUrl($page - 1) ?>">&laquo; Prev</a>
             <?php else: ?>
                 <span class="disabled">&laquo; Prev</span>
             <?php endif; ?>
@@ -43,7 +71,7 @@ use Heirloom\Thumbnail; ?>
             $start = max(1, $page - 2);
             $end = min($totalPages, $page + 2);
             if ($start > 1): ?>
-                <a href="?page=1">1</a>
+                <a href="<?= $pageUrl(1) ?>">1</a>
                 <?php if ($start > 2): ?><span>...</span><?php endif; ?>
             <?php endif; ?>
 
@@ -51,17 +79,17 @@ use Heirloom\Thumbnail; ?>
                 <?php if ($i === $page): ?>
                     <span class="current"><?= $i ?></span>
                 <?php else: ?>
-                    <a href="?page=<?= $i ?>"><?= $i ?></a>
+                    <a href="<?= $pageUrl($i) ?>"><?= $i ?></a>
                 <?php endif; ?>
             <?php endfor; ?>
 
             <?php if ($end < $totalPages): ?>
                 <?php if ($end < $totalPages - 1): ?><span>...</span><?php endif; ?>
-                <a href="?page=<?= $totalPages ?>"><?= $totalPages ?></a>
+                <a href="<?= $pageUrl($totalPages) ?>"><?= $totalPages ?></a>
             <?php endif; ?>
 
             <?php if ($page < $totalPages): ?>
-                <a href="?page=<?= $page + 1 ?>">Next &raquo;</a>
+                <a href="<?= $pageUrl($page + 1) ?>">Next &raquo;</a>
             <?php else: ?>
                 <span class="disabled">Next &raquo;</span>
             <?php endif; ?>
