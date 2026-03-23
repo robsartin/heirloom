@@ -16,21 +16,39 @@ class GalleryController
     {
         $perPage = $this->settings->getInt('gallery_per_page', 12);
         $page = max(1, (int) ($_GET['page'] ?? 1));
+        $search = trim($_GET['q'] ?? '');
+        $sort = $_GET['sort'] ?? 'newest';
+
+        // Build WHERE clause
+        $where = 'p.awarded_to IS NULL';
+        $params = [];
+        if ($search !== '') {
+            $where .= ' AND (p.title LIKE :search OR p.description LIKE :search)';
+            $params[':search'] = '%' . $search . '%';
+        }
 
         $total = (int) $this->db->scalar(
-            'SELECT COUNT(*) FROM paintings WHERE awarded_to IS NULL'
+            "SELECT COUNT(*) FROM paintings p WHERE $where",
+            $params
         );
         $totalPages = max(1, (int) ceil($total / $perPage));
         $page = min($page, $totalPages);
         $offset = ($page - 1) * $perPage;
 
+        // Determine ORDER BY
+        $orderBy = match ($sort) {
+            'wanted' => 'interest_count DESC',
+            'title'  => 'p.title ASC',
+            default  => 'p.created_at DESC',
+        };
+
         $paintings = $this->db->fetchAll(
-            'SELECT p.*, (SELECT COUNT(*) FROM interests i WHERE i.painting_id = p.id) AS interest_count
+            "SELECT p.*, (SELECT COUNT(*) FROM interests i WHERE i.painting_id = p.id) AS interest_count
              FROM paintings p
-             WHERE p.awarded_to IS NULL
-             ORDER BY p.created_at DESC
-             LIMIT :limit OFFSET :offset',
-            [':limit' => $perPage, ':offset' => $offset]
+             WHERE $where
+             ORDER BY $orderBy
+             LIMIT :limit OFFSET :offset",
+            $params + [':limit' => $perPage, ':offset' => $offset]
         );
 
         // Check which ones current user has expressed interest in
@@ -52,6 +70,8 @@ class GalleryController
             'total' => $total,
             'userInterests' => $userInterests,
             'auth' => $this->auth,
+            'search' => $search,
+            'sort' => $sort,
         ]);
     }
 
