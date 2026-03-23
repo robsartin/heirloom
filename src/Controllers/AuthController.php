@@ -171,6 +171,34 @@ class AuthController
         exit;
     }
 
+    public function profileForm(): void
+    {
+        $this->auth->requireLogin();
+        $user = $this->auth->user();
+        Template::render('profile', [
+            'auth' => $this->auth,
+            'user' => $user,
+            'success' => $_SESSION['auth_success'] ?? null,
+            'error' => $_SESSION['auth_error'] ?? null,
+        ]);
+        unset($_SESSION['auth_success'], $_SESSION['auth_error']);
+    }
+
+    public function updateProfile(): void
+    {
+        $this->auth->requireLogin();
+        $address = trim($_POST['shipping_address'] ?? '');
+
+        $this->db->execute(
+            'UPDATE users SET shipping_address = :addr WHERE id = :id',
+            [':addr' => $address !== '' ? $address : null, ':id' => $this->auth->userId()]
+        );
+
+        $_SESSION['auth_success'] = 'Shipping address updated.';
+        header('Location: /profile');
+        exit;
+    }
+
     public function googleRedirect(): void
     {
         $provider = $this->getGoogleProvider();
