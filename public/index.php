@@ -18,6 +18,16 @@ use Heirloom\Controllers\AdminController;
 
 Config::load(__DIR__ . '/../.env');
 
+set_exception_handler(function (\Throwable $e): void {
+    error_log($e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
+    http_response_code(500);
+    Template::render('error', [
+        'code' => 500,
+        'message' => 'An unexpected error occurred. Please try again later.',
+        'noLayout' => true,
+    ]);
+});
+
 session_start();
 
 $db = Database::getInstance();
@@ -85,7 +95,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $token = $_POST['_csrf_token'] ?? '';
     if (!Csrf::validate($token)) {
         http_response_code(403);
-        echo '<h1>403 Forbidden</h1><p>Invalid or missing CSRF token. Please go back and try again.</p>';
+        Template::render('error', [
+            'code' => 403,
+            'message' => 'Invalid or missing CSRF token. Please go back and try again.',
+            'noLayout' => true,
+        ]);
         exit;
     }
 }
