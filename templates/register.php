@@ -1,9 +1,7 @@
 <div class="form-page">
     <h1>Create Account</h1>
 
-    <?php if (!empty($error)): ?>
-        <div class="alert alert-error"><?= \Heirloom\Template::escape($error) ?></div>
-    <?php endif; ?>
+    <?php include __DIR__ . '/partials/alerts.php'; ?>
 
     <?php if (empty($closed)): ?>
         <p style="margin-bottom:1rem;color:var(--text-muted)">Enter your name and email to receive a login link.</p>

@@ -153,12 +153,17 @@ class Auth
         return strtolower(trim($email));
     }
 
-    public function attemptPasswordLogin(string $email, string $password): ?array
+    private function fetchUserByEmail(string $email): ?array
     {
-        $user = $this->db->fetchOne(
+        return $this->db->fetchOne(
             'SELECT * FROM users WHERE email = :email',
             [':email' => self::normalizeEmail($email)]
         );
+    }
+
+    public function attemptPasswordLogin(string $email, string $password): ?array
+    {
+        $user = $this->fetchUserByEmail($email);
         if (!$user || !$user['password_hash']) {
             return null;
         }
@@ -170,19 +175,13 @@ class Auth
 
     public function findUserByEmail(string $email): ?array
     {
-        return $this->db->fetchOne(
-            'SELECT * FROM users WHERE email = :email',
-            [':email' => self::normalizeEmail($email)]
-        );
+        return $this->fetchUserByEmail($email);
     }
 
     public function findOrCreateUserByEmail(string $email, string $name = ''): array
     {
         $email = self::normalizeEmail($email);
-        $user = $this->db->fetchOne(
-            'SELECT * FROM users WHERE email = :email',
-            [':email' => $email]
-        );
+        $user = $this->fetchUserByEmail($email);
         if ($user) {
             return $user;
         }
@@ -241,17 +240,20 @@ HTML;
         return new EmailMessage($email, $subject, $htmlBody, $textBody);
     }
 
-    public function sendMagicLink(string $email, string $token): bool
+    private function sendEmail(EmailMessage $message): bool
     {
-        $message = $this->buildMagicLinkEmail($email, $token);
         $mailer = $this->mailer ?? new LogMailer();
-
         try {
             return $mailer->send($message);
         } catch (\Exception $e) {
             error_log("Mail error: " . $e->getMessage());
             return false;
         }
+    }
+
+    public function sendMagicLink(string $email, string $token): bool
+    {
+        return $this->sendEmail($this->buildMagicLinkEmail($email, $token));
     }
 
     public function buildAwardEmail(string $recipientEmail, string $paintingTitle): EmailMessage
@@ -271,15 +273,7 @@ HTML;
 
     public function sendAwardNotification(string $email, string $paintingTitle): bool
     {
-        $message = $this->buildAwardEmail($email, $paintingTitle);
-        $mailer = $this->mailer ?? new LogMailer();
-
-        try {
-            return $mailer->send($message);
-        } catch (\Exception $e) {
-            error_log("Mail error: " . $e->getMessage());
-            return false;
-        }
+        return $this->sendEmail($this->buildAwardEmail($email, $paintingTitle));
     }
 
     public function buildLoserEmail(string $email, string $paintingTitle): EmailMessage
@@ -302,15 +296,8 @@ HTML;
      */
     public function sendLoserNotifications(array $loserEmails, string $paintingTitle): void
     {
-        $mailer = $this->mailer ?? new LogMailer();
-
         foreach ($loserEmails as $email) {
-            $message = $this->buildLoserEmail($email, $paintingTitle);
-            try {
-                $mailer->send($message);
-            } catch (\Exception $e) {
-                error_log("Mail error (loser notification to $email): " . $e->getMessage());
-            }
+            $this->sendEmail($this->buildLoserEmail($email, $paintingTitle));
         }
     }
 }
