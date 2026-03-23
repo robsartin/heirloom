@@ -9,13 +9,19 @@ graph TB
     end
 
     subgraph Server["PHP Application"]
-        FC[public/index.php\nFront Controller]
+        FC[index.php\nFront Controller]
+        CSRF[Csrf]
         Router[Router]
         Auth[Auth]
+        RL[RateLimiter]
+        SS[SiteSettings]
         GC[GalleryController]
         AC[AuthController]
         ADC[AdminController]
         DB[Database PDO]
+        ML[Mailer]
+        TH[Thumbnail]
+        TPL[Template]
     end
 
     subgraph External
@@ -26,32 +32,40 @@ graph TB
     end
 
     Browser -->|HTTP| FC
+    FC --> CSRF
     FC --> Router
     Router --> GC
     Router --> AC
     Router --> ADC
     GC --> Auth
     AC --> Auth
+    AC --> RL
     ADC --> Auth
     GC --> DB
     AC --> DB
     ADC --> DB
     Auth --> DB
+    Auth --> ML
+    ADC --> TH
+    GC --> TPL
+    AC --> TPL
+    ADC --> TPL
     DB --> MySQL
     AC -->|OAuth2| Google
-    Auth -->|PHPMailer| SMTP
+    ML -->|SmtpMailer| SMTP
     ADC -->|upload| Uploads
     Browser -->|static files| Uploads
 ```
 
 ## Request Lifecycle
 
-Every request flows through a single entry point. This diagram shows the complete path from browser to response.
+Every request flows through a single entry point with CSRF protection and session management.
 
 ```mermaid
 sequenceDiagram
     participant B as Browser
     participant I as index.php
+    participant CSRF as Csrf
     participant R as Router
     participant C as Controller
     participant A as Auth
@@ -61,7 +75,14 @@ sequenceDiagram
     B->>I: HTTP Request
     I->>I: Config::load(.env)
     I->>I: session_start()
-    I->>D: Database::getInstance()
+    I->>A: checkSessionTimeout()
+    I->>A: touchActivity()
+    alt POST request
+        I->>CSRF: validate(token)
+        alt Invalid token
+            I-->>B: 403 Forbidden
+        end
+    end
     I->>R: dispatch(method, uri)
     R->>R: Match route pattern
     R->>C: Call handler(params)
@@ -75,7 +96,7 @@ sequenceDiagram
 
 ## Authentication Flow
 
-The application supports three authentication methods that converge on a single user record matched by email.
+The application supports three authentication methods that converge on a single user record matched by email. Registration is via magic link only. Google OAuth is for returning users.
 
 ### Magic Link Registration and Login
 
@@ -83,30 +104,35 @@ The application supports three authentication methods that converge on a single 
 sequenceDiagram
     participant U as User
     participant App as Application
+    participant RL as RateLimiter
     participant DB as Database
-    participant Mail as SMTP / Error Log
+    participant Mail as Mailer
 
     U->>App: POST /register {email, name}
+    App->>RL: isAllowed(email)
+    alt Rate limited
+        App-->>U: "Too many attempts"
+    end
     App->>DB: findOrCreateUserByEmail(email, name)
+    App->>RL: record(email)
     App->>App: createMagicLink(email)
     App->>DB: INSERT magic_links {email, token}
-    App->>Mail: Send email with link
-    Mail-->>U: Email: "Click to log in"
-    Note over Mail: Link: /auth/magic/{token}<br/>Expires: 1 hour<br/>Single use
+    App->>Mail: send(EmailMessage)
+    Mail-->>U: Email with login link
+    Note over Mail: Link: /auth/magic/{token}<br/>Expiry: configurable (default 60min)<br/>Single use
 
     U->>App: GET /auth/magic/{token}
-    App->>DB: SELECT magic_links WHERE token AND used=0 AND age under 1hr
+    App->>DB: SELECT magic_links WHERE token AND used=0 AND not expired
     alt Valid token
         App->>DB: UPDATE magic_links SET used=1
         App->>DB: findOrCreateUserByEmail(email)
         App->>App: loginUser(userId)
-        App->>App: session_regenerate_id()
-        alt No password set
+        alt No password or forgot-password flag
             App-->>U: Redirect to /set-password
         else Has password
             App-->>U: Redirect to saved URL or /
         end
-    else Invalid/expired token
+    else Invalid or expired token
         App-->>U: "Invalid or expired login link"
     end
 ```
@@ -117,24 +143,32 @@ sequenceDiagram
 sequenceDiagram
     participant U as User
     participant App as Application
+    participant RL as RateLimiter
     participant DB as Database
 
     U->>App: POST /login {email, password}
+    App->>RL: isAllowed(email)
+    alt Rate limited
+        App-->>U: "Too many attempts"
+    end
     App->>DB: SELECT user WHERE email = ?
     alt User found with password_hash
         App->>App: password_verify(password, hash)
         alt Password matches
+            App->>RL: clear(email)
             App->>App: loginUser(userId)
             App-->>U: Redirect to saved URL or /
         else Wrong password
+            App->>RL: record(email)
             App-->>U: "Invalid email or password"
         end
     else No user or no password set
+        App->>RL: record(email)
         App-->>U: "Invalid email or password"
     end
 ```
 
-### Google OAuth2 Login
+### Google OAuth2 Login (existing users only)
 
 ```mermaid
 sequenceDiagram
@@ -149,13 +183,13 @@ sequenceDiagram
     App-->>U: Redirect to Google consent screen
 
     U->>G: Authorize application
-    G-->>U: Redirect to /auth/google/callback?code=X&state=Y
+    G-->>U: Redirect to /auth/google/callback
 
     U->>App: GET /auth/google/callback
     App->>App: Verify state matches session
     App->>G: Exchange code for access token
     G-->>App: Access token
-    App->>G: Get user profile email and name
+    App->>G: Get user profile
     G-->>App: email and name
     App->>DB: findUserByEmail(email)
     alt User exists
@@ -171,19 +205,42 @@ sequenceDiagram
 ```mermaid
 stateDiagram-v2
     [*] --> Created: createMagicLink()
-    Created --> Valid: Token exists, used=0, age < 1hr
+    Created --> Valid: Token exists, used=0, not expired
     Valid --> Consumed: consumeMagicLink() sets used=1
-    Valid --> Expired: Age > 1 hour
+    Valid --> Expired: Age exceeds configured expiry
     Consumed --> [*]: Cannot be reused
     Expired --> [*]: Rejected on next attempt
+
+    note right of Valid: Expiry configurable via\nadmin settings (default 60min)
+```
+
+## Award and Notification Flow
+
+```mermaid
+sequenceDiagram
+    participant Admin as Admin
+    participant App as Application
+    participant DB as Database
+    participant Mail as Mailer
+
+    Admin->>App: POST /admin/painting/{id}/award {user_id}
+    App->>DB: UPDATE paintings SET awarded_to, awarded_at
+    App->>DB: INSERT award_log (awarded action)
+    App->>DB: SELECT winner email and painting title
+    App->>Mail: sendAwardNotification(winner email, title)
+    Mail-->>Admin: Winner: "You've been awarded..."
+    App->>DB: SELECT other interested users
+    App->>Mail: sendLoserNotifications(loser emails, title)
+    Mail-->>Admin: Losers: "Painting awarded to another..."
+    App-->>Admin: Redirect to manage page
 ```
 
 ## Painting Lifecycle
 
 ```mermaid
 stateDiagram-v2
-    [*] --> Uploaded: Admin uploads image
-    Uploaded --> Available: Visible in public gallery
+    [*] --> Uploaded: Admin uploads image + thumbnail
+    Uploaded --> Available: Visible in gallery for logged-in users
 
     Available --> HasInterest: User clicks "I want this"
     HasInterest --> Available: User withdraws interest
@@ -200,6 +257,9 @@ stateDiagram-v2
     HasInterest --> [*]: Admin deletes
     Awarded --> [*]: Admin deletes
     Shipped --> [*]: Admin deletes
+
+    note right of Awarded: Winner + losers notified by email
+    note right of Available: Anonymous visitors see landing page
 ```
 
 ## Database Schema
@@ -253,6 +313,19 @@ erDiagram
         DATETIME created_at
     }
 
+    login_attempts {
+        INT id PK
+        VARCHAR identifier
+        DATETIME attempted_at
+    }
+
+    site_settings {
+        VARCHAR setting_key PK
+        VARCHAR setting_value
+        VARCHAR label
+        VARCHAR description
+    }
+
     users ||--o{ interests : "expresses"
     paintings ||--o{ interests : "receives"
     users ||--o{ paintings : "awarded_to"
@@ -267,9 +340,11 @@ erDiagram
 
 ```mermaid
 graph LR
-    GET_ROOT["GET /"] --> GC[GalleryController::index]
-    GET_PAINTING["GET /painting/id"] --> GC2[GalleryController::show]
-    POST_INTEREST["POST /painting/id/interest"] --> GC3[GalleryController::expressInterest]
+    GET_ROOT["GET /"] --> GC1["index (landing or gallery)"]
+    GET_PAINTING["GET /painting/id"] --> GC2["show (requires login)"]
+    POST_INTEREST["POST /painting/id/interest"] --> GC3[expressInterest]
+    GET_MY["GET /my-paintings"] --> GC4[myPaintings]
+    GET_SITEMAP["GET /sitemap.xml"] --> GC5[sitemapXml]
 ```
 
 ### Auth Routes (AuthController)
@@ -302,6 +377,69 @@ graph LR
     POST_AWARD["POST /admin/painting/id/award"] --> AD6[award]
     POST_TRACK["POST /admin/painting/id/tracking"] --> AD7[updateTracking]
     POST_DELETE["POST /admin/painting/id/delete"] --> AD8[delete]
+    GET_SETTINGS["GET /admin/settings"] --> AD9[settingsForm]
+    POST_SETTINGS["POST /admin/settings"] --> AD10[updateSettings]
+    GET_EXP["GET /admin/export/paintings"] --> AD11[exportPaintings]
+    GET_EXU["GET /admin/export/users"] --> AD12[exportUsers]
+```
+
+## Class Diagram
+
+```mermaid
+classDiagram
+    class Auth {
+        -Database db
+        -SiteSettings settings
+        -Mailer mailer
+        +user() array?
+        +userId() int?
+        +isLoggedIn() bool
+        +isAdmin() bool
+        +requireLogin() void
+        +requireAdmin() void
+        +loginUser(userId) void
+        +logout() void
+        +attemptPasswordLogin(email, password) array?
+        +findUserByEmail(email) array?
+        +findOrCreateUserByEmail(email, name) array
+        +createMagicLink(email) string
+        +consumeMagicLink(token) string?
+        +sendMagicLink(email, token) bool
+        +sendAwardNotification(email, title) bool
+        +sendLoserNotifications(emails, title) void
+        +checkSessionTimeout() void
+        +touchActivity() void
+        +consumeRedirect() string
+    }
+
+    class Mailer {
+        <<interface>>
+        +send(EmailMessage) bool
+    }
+
+    class SmtpMailer {
+        +send(EmailMessage) bool
+    }
+
+    class LogMailer {
+        +send(EmailMessage) bool
+        +getLastMessage() EmailMessage?
+        +getAllMessages() EmailMessage[]
+    }
+
+    class EmailMessage {
+        +string to
+        +string subject
+        +string htmlBody
+        +string textBody
+    }
+
+    Mailer <|.. SmtpMailer
+    Mailer <|.. LogMailer
+    Auth --> Mailer
+    Auth --> EmailMessage
+    Auth --> Database
+    Auth --> SiteSettings
 ```
 
 ## Project Structure
@@ -309,33 +447,60 @@ graph LR
 ```
 heirloom/
 ├── public/                     Web root (server document root)
-│   ├── index.php               Front controller - all requests enter here
-│   ├── .htaccess               Apache rewrite rules
+│   ├── index.php               Front controller with CSRF, session timeout
+│   ├── .htaccess               Apache rewrite + cache headers
 │   ├── .user.ini               PHP upload/memory limits (production)
-│   ├── css/style.css           Stylesheet
-│   └── uploads/                Uploaded painting images
+│   ├── robots.txt              Search engine directives
+│   ├── css/style.css           Stylesheet (cache-busted via ?v=)
+│   └── uploads/                Uploaded images + thumbnails
 ├── src/                        Application code (PSR-4: Heirloom\)
+│   ├── Auth.php                Authentication, sessions, email notifications
 │   ├── Config.php              .env file parser
+│   ├── Csrf.php                CSRF token generation and validation
 │   ├── Database.php            PDO wrapper (MySQL, injectable for tests)
+│   ├── EmailMessage.php        Email value object (to, subject, body)
+│   ├── LogMailer.php           Dev mailer — logs to error_log
+│   ├── Mailer.php              Mailer interface
+│   ├── RateLimiter.php         Login/register attempt throttling
 │   ├── Router.php              Regex-based URL router
-│   ├── Auth.php                Session management, login, magic links, OAuth
-│   ├── Template.php            View renderer with XSS escaping
+│   ├── SiteSettings.php        Database-backed key/value settings
+│   ├── SmtpMailer.php          Production mailer via PHPMailer
+│   ├── Template.php            View renderer with globals and XSS escaping
+│   ├── Thumbnail.php           GD-based image thumbnail generation
 │   └── Controllers/
-│       ├── GalleryController   Public gallery, painting detail, interest toggle
-│       ├── AuthController      Login, register, magic link, Google OAuth, profile
-│       └── AdminController     Dashboard, upload, edit, award, tracking, delete
+│       ├── AdminController     Dashboard, upload, edit, award, export, settings
+│       ├── AuthController      Login, register, OAuth, profile, password
+│       └── GalleryController   Gallery, painting detail, interest, my-paintings
 ├── templates/                  PHP view templates
-├── tests/                      PHPUnit test suite
-├── spec/                       PHPSpec behavioral specifications
+│   ├── layout.php              Base HTML with nav, OG tags, footer
+│   ├── landing.php             Anonymous landing page
+│   ├── gallery.php             Painting grid with search/sort
+│   ├── painting.php            Single painting detail
+│   ├── my-paintings.php        User's wanted/awarded/lost paintings
+│   ├── profile.php             User profile with shipping address
+│   ├── login.php               Login form (password + magic link + Google)
+│   ├── register.php            Registration form (magic link only)
+│   ├── set-password.php        Optional password setup
+│   ├── error.php               Styled error page (404, 403, 500)
+│   ├── partials/alerts.php     Reusable error/success flash alerts
+│   └── admin/
+│       ├── dashboard.php       Stats bar, sortable table, filters, export
+│       ├── upload.php           Batch image upload form
+│       ├── manage.php           Edit, award, tracking, history, delete
+│       └── settings.php         Grouped site settings form
+├── tests/                      PHPUnit test suite (~250 tests)
+├── spec/                       PHPSpec behavioral specs (29 examples)
 ├── doc/                        Documentation and ADRs
-│   └── adr/                    Architecture Decision Records (0001-0011)
+│   ├── adr/                    Architecture Decision Records (0001-0011)
+│   ├── DEVELOPER.md            This file
+│   └── USER_GUIDE.md           End user and admin guide
 ├── .github/
 │   ├── workflows/tests.yml     CI: PHPUnit + PHPSpec on every PR
-│   ├── workflows/pr-review.yml Automated Claude PR review for external PRs
+│   ├── workflows/pr-review.yml Automated Claude PR review
 │   └── CODEOWNERS              @robsartin owns all files
-├── migrate.php                 Database schema creation + admin/test user seed
-├── seed-test-users.php         Sample users with humorous interest messages
-├── php-dev.ini                 PHP config for local dev (large upload limits)
+├── migrate.php                 Schema creation + seed data
+├── seed-test-users.php         Sample users with interest messages
+├── php-dev.ini                 PHP config for local dev
 ├── phpunit.xml                 PHPUnit configuration
 ├── phpspec.yml                 PHPSpec configuration
 ├── composer.json               Dependencies and scripts
@@ -348,8 +513,8 @@ All new code follows **strict TDD** (ADR 0010):
 
 ```mermaid
 graph LR
-    R[RED<br/>Write one<br/>failing test] --> G[GREEN<br/>Minimal code<br/>to pass]
-    G --> RF[REFACTOR<br/>Clean up<br/>keep green]
+    R[RED\nWrite one\nfailing test] --> G[GREEN\nMinimal code\nto pass]
+    G --> RF[REFACTOR\nClean up\nkeep green]
     RF --> R
 ```
 
