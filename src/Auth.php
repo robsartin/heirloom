@@ -281,4 +281,36 @@ HTML;
             return false;
         }
     }
+
+    public function buildLoserEmail(string $email, string $paintingTitle): EmailMessage
+    {
+        $name = $this->siteName();
+
+        $subject = "Update on a painting you wanted - $name";
+        $htmlBody = <<<HTML
+<h2>Painting Update</h2>
+<p>We wanted to let you know that the painting <strong>$paintingTitle</strong> from $name has been awarded to another recipient.</p>
+<p>Keep an eye on the gallery for more paintings you might love!</p>
+HTML;
+        $textBody = "We wanted to let you know that the painting \"$paintingTitle\" from $name has been awarded to another recipient. Keep an eye on the gallery for more paintings you might love!";
+
+        return new EmailMessage($email, $subject, $htmlBody, $textBody);
+    }
+
+    /**
+     * @param string[] $loserEmails
+     */
+    public function sendLoserNotifications(array $loserEmails, string $paintingTitle): void
+    {
+        $mailer = $this->mailer ?? new LogMailer();
+
+        foreach ($loserEmails as $email) {
+            $message = $this->buildLoserEmail($email, $paintingTitle);
+            try {
+                $mailer->send($message);
+            } catch (\Exception $e) {
+                error_log("Mail error (loser notification to $email): " . $e->getMessage());
+            }
+        }
+    }
 }
