@@ -7,6 +7,7 @@ use Heirloom\Auth;
 use Heirloom\Database;
 use Heirloom\SiteSettings;
 use Heirloom\Template;
+use Heirloom\Thumbnail;
 
 class AdminController
 {
@@ -136,6 +137,11 @@ class AdminController
                 $errors[] = "$originalName: upload failed.";
                 continue;
             }
+
+            Thumbnail::generateThumbnail(
+                $uploadDir . $filename,
+                $uploadDir . Thumbnail::thumbFilename($filename)
+            );
 
             if ($fileCount === 1) {
                 $paintingTitle = $title;
@@ -311,7 +317,9 @@ class AdminController
         );
 
         if ($painting) {
-            @unlink(dirname(__DIR__, 2) . '/public/uploads/' . $painting['filename']);
+            $uploadDir = dirname(__DIR__, 2) . '/public/uploads/';
+            @unlink($uploadDir . $painting['filename']);
+            @unlink($uploadDir . Thumbnail::thumbFilename($painting['filename']));
             $this->db->execute('DELETE FROM paintings WHERE id = :id', [':id' => (int) $id]);
         }
 

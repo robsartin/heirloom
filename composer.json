@@ -8,6 +8,7 @@
         "ext-pdo": "*",
         "ext-pdo_mysql": "*",
         "ext-fileinfo": "*",
+        "ext-gd": "*",
         "ext-mbstring": "*",
         "league/oauth2-client": "^2.7",
         "league/oauth2-google": "^4.0",
