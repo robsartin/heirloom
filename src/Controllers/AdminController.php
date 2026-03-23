@@ -270,6 +270,15 @@ class AdminController
             );
             if ($recipient && $painting) {
                 $this->auth->sendAwardNotification($recipient['email'], $painting['title']);
+
+                $losers = $this->db->fetchAll(
+                    'SELECT u.email FROM interests i
+                     JOIN users u ON u.id = i.user_id
+                     WHERE i.painting_id = :pid AND i.user_id != :uid',
+                    [':pid' => (int) $id, ':uid' => $userId]
+                );
+                $loserEmails = array_map(fn(array $row) => $row['email'], $losers);
+                $this->auth->sendLoserNotifications($loserEmails, $painting['title']);
             }
 
             $_SESSION['admin_success'] = 'Painting awarded!';
