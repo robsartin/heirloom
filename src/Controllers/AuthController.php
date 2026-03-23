@@ -6,12 +6,13 @@ namespace Heirloom\Controllers;
 use Heirloom\Auth;
 use Heirloom\Config;
 use Heirloom\Database;
+use Heirloom\SiteSettings;
 use Heirloom\Template;
 use League\OAuth2\Client\Provider\Google;
 
 class AuthController
 {
-    public function __construct(private Database $db, private Auth $auth) {}
+    public function __construct(private Database $db, private Auth $auth, private SiteSettings $settings) {}
 
     public function loginForm(): void
     {
@@ -70,15 +71,29 @@ class AuthController
             header('Location: /');
             exit;
         }
+        if (!$this->settings->getBool('registration_open', true)) {
+            Template::render('register', [
+                'error' => 'Registration is currently closed.',
+                'auth' => $this->auth,
+                'closed' => true,
+            ]);
+            return;
+        }
         Template::render('register', [
             'error' => $_SESSION['auth_error'] ?? null,
             'auth' => $this->auth,
+            'closed' => false,
         ]);
         unset($_SESSION['auth_error']);
     }
 
     public function register(): void
     {
+        if (!$this->settings->getBool('registration_open', true)) {
+            $_SESSION['auth_error'] = 'Registration is currently closed.';
+            header('Location: /login');
+            exit;
+        }
         $email = Auth::normalizeEmail($_POST['email'] ?? '');
         $name = trim($_POST['name'] ?? '');
 

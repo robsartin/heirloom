@@ -5,17 +5,17 @@ namespace Heirloom\Controllers;
 
 use Heirloom\Auth;
 use Heirloom\Database;
+use Heirloom\SiteSettings;
 use Heirloom\Template;
 
 class AdminController
 {
-    private const PER_PAGE = 20;
-
-    public function __construct(private Database $db, private Auth $auth) {}
+    public function __construct(private Database $db, private Auth $auth, private SiteSettings $settings) {}
 
     public function dashboard(): void
     {
         $this->auth->requireAdmin();
+        $perPage = $this->settings->getInt('admin_per_page', 20);
 
         $page = max(1, (int) ($_GET['page'] ?? 1));
         $filter = $_GET['filter'] ?? 'available';
@@ -40,9 +40,9 @@ class AdminController
         $total = (int) $this->db->scalar(
             "SELECT COUNT(*) FROM paintings p $where"
         );
-        $totalPages = max(1, (int) ceil($total / self::PER_PAGE));
+        $totalPages = max(1, (int) ceil($total / $perPage));
         $page = min($page, $totalPages);
-        $offset = ($page - 1) * self::PER_PAGE;
+        $offset = ($page - 1) * $perPage;
 
         $paintings = $this->db->fetchAll(
             "SELECT p.*,
@@ -54,7 +54,7 @@ class AdminController
              $where
              ORDER BY $orderCol $dir
              LIMIT :limit OFFSET :offset",
-            [':limit' => self::PER_PAGE, ':offset' => $offset]
+            [':limit' => $perPage, ':offset' => $offset]
         );
 
         Template::render('admin/dashboard', [
@@ -303,6 +303,40 @@ class AdminController
         }
 
         header('Location: /admin');
+        exit;
+    }
+
+    public function settingsForm(): void
+    {
+        $this->auth->requireAdmin();
+
+        $allSettings = $this->settings->getAll();
+
+        Template::render('admin/settings', [
+            'settings' => $allSettings,
+            'auth' => $this->auth,
+            'success' => $_SESSION['admin_success'] ?? null,
+            'error' => $_SESSION['admin_error'] ?? null,
+        ]);
+        unset($_SESSION['admin_success'], $_SESSION['admin_error']);
+    }
+
+    public function updateSettings(): void
+    {
+        $this->auth->requireAdmin();
+
+        $allSettings = $this->settings->getAll();
+        $updates = [];
+        foreach ($allSettings as $row) {
+            $key = $row['setting_key'];
+            if (isset($_POST[$key])) {
+                $updates[$key] = trim($_POST[$key]);
+            }
+        }
+
+        $this->settings->setBulk($updates);
+        $_SESSION['admin_success'] = 'Settings saved.';
+        header('Location: /admin/settings');
         exit;
     }
 }

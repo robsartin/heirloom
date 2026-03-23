@@ -18,6 +18,7 @@
                     <?php if ($auth->isAdmin()): ?>
                         <a href="/admin">Admin</a>
                         <a href="/admin/upload">Upload</a>
+                        <a href="/admin/settings">Settings</a>
                     <?php endif; ?>
                     <a href="/logout">Log out</a>
                 <?php else: ?>

@@ -7,6 +7,7 @@ use Heirloom\Config;
 use Heirloom\Database;
 use Heirloom\Router;
 use Heirloom\Auth;
+use Heirloom\SiteSettings;
 use Heirloom\Controllers\GalleryController;
 use Heirloom\Controllers\AuthController;
 use Heirloom\Controllers\AdminController;
@@ -16,12 +17,14 @@ Config::load(__DIR__ . '/../.env');
 session_start();
 
 $db = Database::getInstance();
+$settings = new SiteSettings($db);
 $auth = new Auth($db);
+$auth->setSettings($settings);
 $router = new Router();
 
-$gallery = new GalleryController($db, $auth);
-$authCtrl = new AuthController($db, $auth);
-$admin = new AdminController($db, $auth);
+$gallery = new GalleryController($db, $auth, $settings);
+$authCtrl = new AuthController($db, $auth, $settings);
+$admin = new AdminController($db, $auth, $settings);
 
 // Public routes
 $router->get('/', [$gallery, 'index']);
@@ -51,5 +54,7 @@ $router->post('/admin/painting/{id}/edit', [$admin, 'edit']);
 $router->post('/admin/painting/{id}/award', [$admin, 'award']);
 $router->post('/admin/painting/{id}/tracking', [$admin, 'updateTracking']);
 $router->post('/admin/painting/{id}/delete', [$admin, 'delete']);
+$router->get('/admin/settings', [$admin, 'settingsForm']);
+$router->post('/admin/settings', [$admin, 'updateSettings']);
 
 $router->dispatch($_SERVER['REQUEST_METHOD'], parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH));

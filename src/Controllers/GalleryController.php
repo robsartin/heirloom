@@ -5,24 +5,24 @@ namespace Heirloom\Controllers;
 
 use Heirloom\Auth;
 use Heirloom\Database;
+use Heirloom\SiteSettings;
 use Heirloom\Template;
 
 class GalleryController
 {
-    private const PER_PAGE = 12;
-
-    public function __construct(private Database $db, private Auth $auth) {}
+    public function __construct(private Database $db, private Auth $auth, private SiteSettings $settings) {}
 
     public function index(): void
     {
+        $perPage = $this->settings->getInt('gallery_per_page', 12);
         $page = max(1, (int) ($_GET['page'] ?? 1));
 
         $total = (int) $this->db->scalar(
             'SELECT COUNT(*) FROM paintings WHERE awarded_to IS NULL'
         );
-        $totalPages = max(1, (int) ceil($total / self::PER_PAGE));
+        $totalPages = max(1, (int) ceil($total / $perPage));
         $page = min($page, $totalPages);
-        $offset = ($page - 1) * self::PER_PAGE;
+        $offset = ($page - 1) * $perPage;
 
         $paintings = $this->db->fetchAll(
             'SELECT p.*, (SELECT COUNT(*) FROM interests i WHERE i.painting_id = p.id) AS interest_count
@@ -30,7 +30,7 @@ class GalleryController
              WHERE p.awarded_to IS NULL
              ORDER BY p.created_at DESC
              LIMIT :limit OFFSET :offset',
-            [':limit' => self::PER_PAGE, ':offset' => $offset]
+            [':limit' => $perPage, ':offset' => $offset]
         );
 
         // Check which ones current user has expressed interest in
