@@ -105,6 +105,49 @@ class Auth
         session_destroy();
     }
 
+    private function sessionTimeoutMinutes(): int
+    {
+        return $this->settings ? $this->settings->getInt('session_timeout_minutes', 120) : 120;
+    }
+
+    /**
+     * Check whether the current session has expired due to inactivity.
+     * Returns true if the session is expired, false otherwise.
+     */
+    public function isSessionExpired(): bool
+    {
+        if (!$this->isLoggedIn()) {
+            return false;
+        }
+        if (!isset($_SESSION['last_activity'])) {
+            return false;
+        }
+        $timeout = $this->sessionTimeoutMinutes() * 60;
+        return (time() - (int) $_SESSION['last_activity']) > $timeout;
+    }
+
+    /**
+     * If the session has timed out, log out and redirect to /login.
+     */
+    public function checkSessionTimeout(): void
+    {
+        if ($this->isSessionExpired()) {
+            $this->logout();
+            session_start();
+            $_SESSION['flash_message'] = 'Your session has expired due to inactivity. Please log in again.';
+            header('Location: /login');
+            exit;
+        }
+    }
+
+    /**
+     * Record current time as last activity for session timeout tracking.
+     */
+    public function touchActivity(): void
+    {
+        $_SESSION['last_activity'] = time();
+    }
+
     public static function normalizeEmail(string $email): string
     {
         return strtolower(trim($email));
