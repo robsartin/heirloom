@@ -23,6 +23,11 @@ class Auth
         return $this->settings ? $this->settings->getInt('magic_link_expiry_minutes', 60) : 60;
     }
 
+    private function siteName(): string
+    {
+        return $this->settings ? $this->settings->get('site_name', 'Heirloom Gallery') : 'Heirloom Gallery';
+    }
+
     public function user(): ?array
     {
         if (!isset($_SESSION['user_id'])) {
@@ -195,14 +200,16 @@ class Auth
             $mail->setFrom(Config::get('MAIL_FROM'), Config::get('MAIL_FROM_NAME', 'Heirloom'));
             $mail->addAddress($email);
             $mail->isHTML(true);
-            $mail->Subject = 'Your login link - Heirloom Gallery';
+            $name = $this->siteName();
+            $expiry = $this->magicLinkExpiryMinutes();
+            $mail->Subject = "Your login link - $name";
             $mail->Body = "
-                <h2>Welcome to Heirloom Gallery</h2>
-                <p>Click the link below to log in. This link expires in 1 hour and can only be used once.</p>
-                <p><a href=\"$url\">Log in to Heirloom Gallery</a></p>
+                <h2>Welcome to $name</h2>
+                <p>Click the link below to log in. This link expires in $expiry minutes and can only be used once.</p>
+                <p><a href=\"$url\">Log in to $name</a></p>
                 <p>If you didn't request this, you can safely ignore this email.</p>
             ";
-            $mail->AltBody = "Log in to Heirloom Gallery: $url";
+            $mail->AltBody = "Log in to $name: $url";
             $mail->send();
             return true;
         } catch (\Exception $e) {

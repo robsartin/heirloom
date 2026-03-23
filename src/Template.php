@@ -6,9 +6,16 @@ namespace Heirloom;
 class Template
 {
     private static string $baseDir = __DIR__ . '/../templates';
+    private static array $globals = [];
+
+    public static function setGlobal(string $key, string $value): void
+    {
+        self::$globals[$key] = $value;
+    }
 
     public static function render(string $template, array $data = []): void
     {
+        $data = array_merge(self::$globals, $data);
         extract($data);
         $templatePath = self::$baseDir . '/' . $template . '.php';
         ob_start();
@@ -19,6 +26,7 @@ class Template
             echo $content;
         } else {
             $auth = $data['auth'] ?? null;
+            $siteName = $data['siteName'] ?? 'Heirloom Gallery';
             require self::$baseDir . '/layout.php';
         }
     }

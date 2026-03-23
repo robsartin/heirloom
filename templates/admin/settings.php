@@ -3,7 +3,7 @@
 <div style="margin-bottom:1rem;"><a href="/admin">&laquo; Back to dashboard</a></div>
 
 <h1>Site Settings</h1>
-<p style="color:var(--text-muted);margin-bottom:1.5rem;">Configure how Heirloom Gallery behaves. Changes take effect immediately.</p>
+<p style="color:var(--text-muted);margin-bottom:1.5rem;">Configure how <?= Template::escape($siteName) ?> behaves. Changes take effect immediately.</p>
 
 <?php if (!empty($error)): ?>
     <div class="alert alert-error"><?= Template::escape($error) ?></div>
