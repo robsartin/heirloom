@@ -2,13 +2,7 @@
     <h1>Set Your Password</h1>
     <p style="margin-bottom:1rem;color:var(--text-muted)">Optional: set a password so you can log in without a magic link next time.</p>
 
-    <?php if (!empty($error)): ?>
-        <div class="alert alert-error"><?= \Heirloom\Template::escape($error) ?></div>
-    <?php endif; ?>
-
-    <?php if (!empty($success)): ?>
-        <div class="alert alert-success"><?= \Heirloom\Template::escape($success) ?></div>
-    <?php endif; ?>
+    <?php include __DIR__ . '/partials/alerts.php'; ?>
 
     <div class="form-card">
         <form method="POST" action="/set-password">

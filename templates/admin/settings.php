@@ -5,13 +5,7 @@
 <h1>Site Settings</h1>
 <p style="color:var(--text-muted);margin-bottom:1.5rem;">Configure how <?= Template::escape($siteName) ?> behaves. Changes take effect immediately.</p>
 
-<?php if (!empty($error)): ?>
-    <div class="alert alert-error"><?= Template::escape($error) ?></div>
-<?php endif; ?>
-
-<?php if (!empty($success)): ?>
-    <div class="alert alert-success"><?= Template::escape($success) ?></div>
-<?php endif; ?>
+<?php include __DIR__ . '/../partials/alerts.php'; ?>
 
 <?php
 $groups = [

@@ -9,31 +9,33 @@ class SiteSettings
 
     public function __construct(private Database $db) {}
 
-    public function get(string $key, string $default = ''): string
+    private function fetchValue(string $key): ?string
     {
         $row = $this->db->fetchOne(
             'SELECT setting_value FROM site_settings WHERE setting_key = :k',
             [':k' => $key]
         );
-        return $row ? $row['setting_value'] : $default;
+        return $row ? $row['setting_value'] : null;
+    }
+
+    public function get(string $key, string $default = ''): string
+    {
+        return $this->fetchValue($key) ?? $default;
     }
 
     public function getInt(string $key, int $default = 0): int
     {
-        $val = $this->get($key, (string) $default);
-        return (int) $val;
+        $val = $this->fetchValue($key);
+        return $val !== null ? (int) $val : $default;
     }
 
     public function getBool(string $key, bool $default = false): bool
     {
-        $row = $this->db->fetchOne(
-            'SELECT setting_value FROM site_settings WHERE setting_key = :k',
-            [':k' => $key]
-        );
-        if (!$row) {
+        $val = $this->fetchValue($key);
+        if ($val === null) {
             return $default;
         }
-        return in_array($row['setting_value'], ['1', 'true', 'yes'], true);
+        return in_array($val, ['1', 'true', 'yes'], true);
     }
 
     public function set(string $key, string $value): void

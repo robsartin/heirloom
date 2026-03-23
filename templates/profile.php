@@ -1,13 +1,7 @@
 <div class="form-page">
     <h1>Your Profile</h1>
 
-    <?php if (!empty($error)): ?>
-        <div class="alert alert-error"><?= \Heirloom\Template::escape($error) ?></div>
-    <?php endif; ?>
-
-    <?php if (!empty($success)): ?>
-        <div class="alert alert-success"><?= \Heirloom\Template::escape($success) ?></div>
-    <?php endif; ?>
+    <?php include __DIR__ . '/partials/alerts.php'; ?>
 
     <div class="form-card">
         <p style="margin-bottom:0.5rem;"><strong><?= \Heirloom\Template::escape($user['name'] ?: $user['email']) ?></strong></p>
