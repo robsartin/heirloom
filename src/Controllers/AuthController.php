@@ -34,11 +34,11 @@ class AuthController
             exit;
         }
         Template::render('login', [
-            'error' => $_SESSION['auth_error'] ?? null,
-            'success' => $_SESSION['auth_success'] ?? null,
+            'error' => $_SESSION[Flash::AUTH_ERROR] ?? null,
+            'success' => $_SESSION[Flash::AUTH_SUCCESS] ?? null,
             'auth' => $this->auth,
         ]);
-        unset($_SESSION['auth_error'], $_SESSION['auth_success']);
+        unset($_SESSION[Flash::AUTH_ERROR], $_SESSION[Flash::AUTH_SUCCESS]);
     }
 
     public function login(): void
@@ -47,13 +47,13 @@ class AuthController
         $password = $_POST['password'] ?? '';
 
         if (!$email) {
-            $this->redirectWithFlash('/login', 'auth_error', 'Email is required.');
+            $this->redirectWithFlash(Routes::LOGIN, Flash::AUTH_ERROR, 'Email is required.');
         }
 
         $identifier = Auth::normalizeEmail($email);
         if (!$this->rateLimiter->isAllowed($identifier)) {
             $remaining = $this->rateLimiter->remainingAttempts($identifier);
-            $this->redirectWithFlash('/login', 'auth_error', 'Too many login attempts. Please try again in 15 minutes.');
+            $this->redirectWithFlash(Routes::LOGIN, Flash::AUTH_ERROR, 'Too many login attempts. Please try again in 15 minutes.');
         }
 
         if ($password !== '') {
@@ -65,7 +65,7 @@ class AuthController
                 exit;
             }
             $this->rateLimiter->record($identifier);
-            $this->redirectWithFlash('/login', 'auth_error', 'Invalid email or password.');
+            $this->redirectWithFlash(Routes::LOGIN, Flash::AUTH_ERROR, 'Invalid email or password.');
         }
 
         // If the user explicitly requested "forgot password", set a session flag
@@ -79,9 +79,9 @@ class AuthController
         $sent = $this->auth->sendMagicLink($email, $token);
 
         if ($sent) {
-            $this->redirectWithFlash('/login', 'auth_success', 'Check your email for a login link! (Expires in 1 hour)');
+            $this->redirectWithFlash(Routes::LOGIN, Flash::AUTH_SUCCESS, 'Check your email for a login link! (Expires in 1 hour)');
         } else {
-            $this->redirectWithFlash('/login', 'auth_error', 'Failed to send login link. Please try again.');
+            $this->redirectWithFlash(Routes::LOGIN, Flash::AUTH_ERROR, 'Failed to send login link. Please try again.');
         }
     }
 
@@ -100,31 +100,31 @@ class AuthController
             return;
         }
         Template::render('register', [
-            'error' => $_SESSION['auth_error'] ?? null,
+            'error' => $_SESSION[Flash::AUTH_ERROR] ?? null,
             'auth' => $this->auth,
             'closed' => false,
         ]);
-        unset($_SESSION['auth_error']);
+        unset($_SESSION[Flash::AUTH_ERROR]);
     }
 
     public function register(): void
     {
         if (!$this->settings->getBool('registration_open', true)) {
-            $this->redirectWithFlash('/login', 'auth_error', 'Registration is currently closed.');
+            $this->redirectWithFlash(Routes::LOGIN, Flash::AUTH_ERROR, 'Registration is currently closed.');
         }
         $email = Auth::normalizeEmail($_POST['email'] ?? '');
         $name = trim($_POST['name'] ?? '');
 
         if (!$email || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            $this->redirectWithFlash('/register', 'auth_error', 'Valid email is required.');
+            $this->redirectWithFlash(Routes::REGISTER, Flash::AUTH_ERROR, Flash::MSG_VALID_EMAIL_REQUIRED);
         }
 
         if (!$this->rateLimiter->isAllowed($email)) {
-            $this->redirectWithFlash('/register', 'auth_error', 'Too many attempts. Please try again in 15 minutes.');
+            $this->redirectWithFlash(Routes::REGISTER, Flash::AUTH_ERROR, Flash::MSG_TOO_MANY_ATTEMPTS);
         }
 
         if (!$name) {
-            $this->redirectWithFlash('/register', 'auth_error', 'Name is required.');
+            $this->redirectWithFlash(Routes::REGISTER, Flash::AUTH_ERROR, 'Name is required.');
         }
 
         $this->auth->findOrCreateUserByEmail($email, $name);
@@ -134,9 +134,9 @@ class AuthController
         $sent = $this->auth->sendMagicLink($email, $token);
 
         if ($sent) {
-            $this->redirectWithFlash('/login', 'auth_success', 'Check your email for a login link!');
+            $this->redirectWithFlash(Routes::LOGIN, Flash::AUTH_SUCCESS, 'Check your email for a login link!');
         } else {
-            $this->redirectWithFlash('/login', 'auth_error', 'Account created but failed to send login link.');
+            $this->redirectWithFlash(Routes::LOGIN, Flash::AUTH_ERROR, 'Account created but failed to send login link.');
         }
     }
 
@@ -144,7 +144,7 @@ class AuthController
     {
         $email = $this->auth->consumeMagicLink($token);
         if (!$email) {
-            $this->redirectWithFlash('/login', 'auth_error', 'Invalid or expired login link.');
+            $this->redirectWithFlash(Routes::LOGIN, Flash::AUTH_ERROR, 'Invalid or expired login link.');
         }
 
         $user = $this->auth->findOrCreateUserByEmail($email);
@@ -168,10 +168,10 @@ class AuthController
         $this->auth->requireLogin();
         Template::render('set-password', [
             'auth' => $this->auth,
-            'error' => $_SESSION['auth_error'] ?? null,
-            'success' => $_SESSION['auth_success'] ?? null,
+            'error' => $_SESSION[Flash::AUTH_ERROR] ?? null,
+            'success' => $_SESSION[Flash::AUTH_SUCCESS] ?? null,
         ]);
-        unset($_SESSION['auth_error'], $_SESSION['auth_success']);
+        unset($_SESSION[Flash::AUTH_ERROR], $_SESSION[Flash::AUTH_SUCCESS]);
     }
 
     /**
@@ -202,7 +202,7 @@ class AuthController
 
         $identifier = 'password_change_' . $this->auth->userId();
         if (!$this->rateLimiter->isAllowed($identifier)) {
-            $this->redirectWithFlash('/set-password', 'auth_error', 'Too many attempts. Please try again in 15 minutes.');
+            $this->redirectWithFlash(Routes::SET_PASSWORD, Flash::AUTH_ERROR, Flash::MSG_TOO_MANY_ATTEMPTS);
         }
         $this->rateLimiter->record($identifier);
 
@@ -211,10 +211,10 @@ class AuthController
 
         $validationError = self::validatePassword($password);
         if ($validationError !== null) {
-            $this->redirectWithFlash('/set-password', 'auth_error', $validationError);
+            $this->redirectWithFlash(Routes::SET_PASSWORD, Flash::AUTH_ERROR, $validationError);
         }
         if ($password !== $confirm) {
-            $this->redirectWithFlash('/set-password', 'auth_error', 'Passwords do not match.');
+            $this->redirectWithFlash(Routes::SET_PASSWORD, Flash::AUTH_ERROR, 'Passwords do not match.');
         }
 
         $hash = password_hash($password, PASSWORD_DEFAULT);
@@ -223,7 +223,7 @@ class AuthController
             [':hash' => $hash, ':id' => $this->auth->userId()]
         );
 
-        $this->redirectWithFlash('/', 'auth_success', 'Password set successfully!');
+        $this->redirectWithFlash('/', Flash::AUTH_SUCCESS, 'Password set successfully!');
     }
 
     public function profileForm(): void
@@ -238,10 +238,10 @@ class AuthController
             'auth' => $this->auth,
             'user' => $user,
             'awardedPaintings' => $awardedPaintings,
-            'success' => $_SESSION['auth_success'] ?? null,
-            'error' => $_SESSION['auth_error'] ?? null,
+            'success' => $_SESSION[Flash::AUTH_SUCCESS] ?? null,
+            'error' => $_SESSION[Flash::AUTH_ERROR] ?? null,
         ]);
-        unset($_SESSION['auth_success'], $_SESSION['auth_error']);
+        unset($_SESSION[Flash::AUTH_SUCCESS], $_SESSION[Flash::AUTH_ERROR]);
     }
 
     public function updateProfile(): void
@@ -251,7 +251,7 @@ class AuthController
 
         $lengthError = InputValidator::validateLength($address, 500, 'Shipping address');
         if ($lengthError) {
-            $this->redirectWithFlash('/profile', 'auth_error', $lengthError);
+            $this->redirectWithFlash(Routes::PROFILE, Flash::AUTH_ERROR, $lengthError);
         }
 
         $this->db->execute(
@@ -259,7 +259,7 @@ class AuthController
             [':addr' => $address !== '' ? $address : null, ':id' => $this->auth->userId()]
         );
 
-        $this->redirectWithFlash('/profile', 'auth_success', 'Shipping address updated.');
+        $this->redirectWithFlash(Routes::PROFILE, Flash::AUTH_SUCCESS, 'Shipping address updated.');
     }
 
     public function googleRedirect(): void
@@ -277,7 +277,7 @@ class AuthController
 
         if (empty($_GET['state']) || ($_GET['state'] !== ($_SESSION['oauth2state'] ?? ''))) {
             unset($_SESSION['oauth2state']);
-            $this->redirectWithFlash('/login', 'auth_error', 'Invalid OAuth state.');
+            $this->redirectWithFlash(Routes::LOGIN, Flash::AUTH_ERROR, 'Invalid OAuth state.');
         }
 
         try {
@@ -287,7 +287,7 @@ class AuthController
 
             $user = $this->auth->findUserByEmail($email);
             if (!$user) {
-                $this->redirectWithFlash('/register', 'auth_error', 'No account found for that Google email. Please register first.');
+                $this->redirectWithFlash(Routes::REGISTER, Flash::AUTH_ERROR, 'No account found for that Google email. Please register first.');
             }
 
             $this->auth->loginUser((int) $user['id']);
@@ -295,7 +295,7 @@ class AuthController
             exit;
         } catch (\Exception $e) {
             error_log('OAuth error: ' . $e->getMessage());
-            $this->redirectWithFlash('/login', 'auth_error', 'Google login failed. Please try again.');
+            $this->redirectWithFlash(Routes::LOGIN, Flash::AUTH_ERROR, 'Google login failed. Please try again.');
         }
     }
 

@@ -151,7 +151,7 @@ class GalleryController
 
         $lengthError = InputValidator::validateLength($message, 1000, 'Interest message');
         if ($lengthError) {
-            $this->redirectWithFlash('/painting/' . $id, 'gallery_error', $lengthError);
+            $this->redirectWithFlash(Routes::painting($id), Flash::GALLERY_ERROR, $lengthError);
         }
 
         if ($existing) {

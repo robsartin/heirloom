@@ -102,10 +102,10 @@ class AdminController
         $this->auth->requireAdmin();
         Template::render('admin/upload', [
             'auth' => $this->auth,
-            'error' => $_SESSION['upload_error'] ?? null,
-            'success' => $_SESSION['upload_success'] ?? null,
+            'error' => $_SESSION[Flash::UPLOAD_ERROR] ?? null,
+            'success' => $_SESSION[Flash::UPLOAD_SUCCESS] ?? null,
         ]);
-        unset($_SESSION['upload_error'], $_SESSION['upload_success']);
+        unset($_SESSION[Flash::UPLOAD_ERROR], $_SESSION[Flash::UPLOAD_SUCCESS]);
     }
 
     public function upload(): void
@@ -115,7 +115,7 @@ class AdminController
         // Detect when PHP rejected the POST body as too large
         if (empty($_POST) && empty($_FILES) && isset($_SERVER['CONTENT_LENGTH']) && (int) $_SERVER['CONTENT_LENGTH'] > 0) {
             $maxPost = ini_get('post_max_size');
-            $this->redirectWithFlash('/admin/upload', 'upload_error', "Upload too large. The server limit is {$maxPost}. Try fewer files at once, or ask the admin to increase post_max_size/upload_max_filesize.");
+            $this->redirectWithFlash(Routes::ADMIN_UPLOAD, Flash::UPLOAD_ERROR, "Upload too large. The server limit is {$maxPost}. Try fewer files at once, or ask the admin to increase post_max_size/upload_max_filesize.");
         }
 
         $title = trim($_POST['title'] ?? '');
@@ -124,11 +124,11 @@ class AdminController
         $titleError = InputValidator::validateLength($title, 255, 'Title');
         $descError = InputValidator::validateLength($description, 5000, 'Description');
         if ($titleError || $descError) {
-            $this->redirectWithFlash('/admin/upload', 'upload_error', $titleError ?? $descError);
+            $this->redirectWithFlash(Routes::ADMIN_UPLOAD, Flash::UPLOAD_ERROR, $titleError ?? $descError);
         }
 
         if (empty($_FILES['paintings']) || !is_array($_FILES['paintings']['name'])) {
-            $this->redirectWithFlash('/admin/upload', 'upload_error', 'Please select at least one image.');
+            $this->redirectWithFlash(Routes::ADMIN_UPLOAD, Flash::UPLOAD_ERROR, 'Please select at least one image.');
         }
 
         $uploadDir = dirname(__DIR__, 2) . '/public/uploads/';
@@ -140,7 +140,7 @@ class AdminController
 
         // Single file with no title is an error
         if ($fileCount === 1 && $title === '') {
-            $this->redirectWithFlash('/admin/upload', 'upload_error', 'Title is required for single file uploads.');
+            $this->redirectWithFlash(Routes::ADMIN_UPLOAD, Flash::UPLOAD_ERROR, 'Title is required for single file uploads.');
         }
 
         for ($i = 0; $i < $fileCount; $i++) {
@@ -190,10 +190,10 @@ class AdminController
         }
 
         if ($uploaded > 0) {
-            $this->redirectWithFlash('/admin/upload', 'upload_success', "$uploaded painting(s) uploaded successfully." .
+            $this->redirectWithFlash(Routes::ADMIN_UPLOAD, Flash::UPLOAD_SUCCESS, "$uploaded painting(s) uploaded successfully." .
                 ($errors ? ' Errors: ' . implode(', ', $errors) : ''));
         } else {
-            $this->redirectWithFlash('/admin/upload', 'upload_error', 'No paintings uploaded. ' . implode(', ', $errors));
+            $this->redirectWithFlash(Routes::ADMIN_UPLOAD, Flash::UPLOAD_ERROR, 'No paintings uploaded. ' . implode(', ', $errors));
         }
     }
 
@@ -243,10 +243,10 @@ class AdminController
             'awardedUser' => $awardedUser,
             'awardLog' => $awardLog,
             'auth' => $this->auth,
-            'success' => $_SESSION['admin_success'] ?? null,
-            'error' => $_SESSION['admin_error'] ?? null,
+            'success' => $_SESSION[Flash::ADMIN_SUCCESS] ?? null,
+            'error' => $_SESSION[Flash::ADMIN_ERROR] ?? null,
         ]);
-        unset($_SESSION['admin_success'], $_SESSION['admin_error']);
+        unset($_SESSION[Flash::ADMIN_SUCCESS], $_SESSION[Flash::ADMIN_ERROR]);
     }
 
     public function edit(string $id): void
@@ -257,13 +257,13 @@ class AdminController
         $description = trim($_POST['description'] ?? '');
 
         if ($title === '') {
-            $this->redirectWithFlash('/admin/painting/' . $id, 'admin_error', 'Title cannot be empty.');
+            $this->redirectWithFlash(Routes::adminPainting($id), Flash::ADMIN_ERROR, 'Title cannot be empty.');
         }
 
         $titleError = InputValidator::validateLength($title, 255, 'Title');
         $descError = InputValidator::validateLength($description, 5000, 'Description');
         if ($titleError || $descError) {
-            $this->redirectWithFlash('/admin/painting/' . $id, 'admin_error', $titleError ?? $descError);
+            $this->redirectWithFlash(Routes::adminPainting($id), Flash::ADMIN_ERROR, $titleError ?? $descError);
         }
 
         $this->db->execute(
@@ -271,7 +271,7 @@ class AdminController
             [':title' => $title, ':desc' => $description, ':id' => (int) $id]
         );
 
-        $this->redirectWithFlash('/admin/painting/' . $id, 'admin_success', 'Painting updated.');
+        $this->redirectWithFlash(Routes::adminPainting($id), Flash::ADMIN_SUCCESS, 'Painting updated.');
     }
 
     public function award(string $id): void
@@ -313,7 +313,7 @@ class AdminController
                 $this->auth->sendLoserNotifications($loserEmails, $painting['title']);
             }
 
-            $this->setFlash('admin_success', 'Painting awarded!');
+            $this->setFlash(Flash::ADMIN_SUCCESS, 'Painting awarded!');
         } else {
             $painting = $this->db->fetchOne('SELECT awarded_to FROM paintings WHERE id = :id', [':id' => (int) $id]);
             if ($painting && $painting['awarded_to']) {
@@ -326,10 +326,10 @@ class AdminController
                 'UPDATE paintings SET awarded_to = NULL, awarded_at = NULL, tracking_number = NULL WHERE id = :id',
                 [':id' => (int) $id]
             );
-            $this->setFlash('admin_success', 'Painting unassigned.');
+            $this->setFlash(Flash::ADMIN_SUCCESS, 'Painting unassigned.');
         }
 
-        header('Location: /admin/painting/' . $id);
+        header('Location: ' . Routes::adminPainting($id));
         exit;
     }
 
@@ -343,7 +343,7 @@ class AdminController
             [':tn' => $tracking !== '' ? $tracking : null, ':id' => (int) $id]
         );
 
-        $this->redirectWithFlash('/admin/painting/' . $id, 'admin_success', 'Tracking number updated.');
+        $this->redirectWithFlash(Routes::adminPainting($id), Flash::ADMIN_SUCCESS, 'Tracking number updated.');
     }
 
     public function delete(string $id): void
@@ -362,7 +362,7 @@ class AdminController
             $this->db->execute('DELETE FROM paintings WHERE id = :id', [':id' => (int) $id]);
         }
 
-        header('Location: /admin');
+        header('Location: ' . Routes::ADMIN);
         exit;
     }
 
@@ -496,10 +496,10 @@ class AdminController
         Template::render('admin/settings', [
             'settings' => $allSettings,
             'auth' => $this->auth,
-            'success' => $_SESSION['admin_success'] ?? null,
-            'error' => $_SESSION['admin_error'] ?? null,
+            'success' => $_SESSION[Flash::ADMIN_SUCCESS] ?? null,
+            'error' => $_SESSION[Flash::ADMIN_ERROR] ?? null,
         ]);
-        unset($_SESSION['admin_success'], $_SESSION['admin_error']);
+        unset($_SESSION[Flash::ADMIN_SUCCESS], $_SESSION[Flash::ADMIN_ERROR]);
     }
 
     public function updateSettings(): void
@@ -523,10 +523,10 @@ class AdminController
             if ($valid) {
                 $this->settings->setBulk($valid);
             }
-            $this->redirectWithFlash('/admin/settings', 'admin_error', implode(' ', array_values($errors)));
+            $this->redirectWithFlash(Routes::ADMIN_SETTINGS, Flash::ADMIN_ERROR, implode(' ', array_values($errors)));
         } else {
             $this->settings->setBulk($updates);
-            $this->redirectWithFlash('/admin/settings', 'admin_success', 'Settings saved.');
+            $this->redirectWithFlash(Routes::ADMIN_SETTINGS, Flash::ADMIN_SUCCESS, 'Settings saved.');
         }
     }
 
@@ -580,10 +580,10 @@ class AdminController
         $this->auth->requireAdmin();
         Template::render('admin/invite', [
             'auth' => $this->auth,
-            'success' => $_SESSION['admin_success'] ?? null,
-            'error' => $_SESSION['admin_error'] ?? null,
+            'success' => $_SESSION[Flash::ADMIN_SUCCESS] ?? null,
+            'error' => $_SESSION[Flash::ADMIN_ERROR] ?? null,
         ]);
-        unset($_SESSION['admin_success'], $_SESSION['admin_error']);
+        unset($_SESSION[Flash::ADMIN_SUCCESS], $_SESSION[Flash::ADMIN_ERROR]);
     }
 
     public function invite(): void
@@ -594,16 +594,16 @@ class AdminController
         $name = trim($_POST['name'] ?? '');
 
         if (!$email || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            $this->redirectWithFlash('/admin/invite', 'admin_error', 'Valid email is required.');
+            $this->redirectWithFlash(Routes::ADMIN_INVITE, Flash::ADMIN_ERROR, Flash::MSG_VALID_EMAIL_REQUIRED);
         }
 
         $token = $this->auth->createInvite($email, $name);
         $sent = $this->auth->sendInvite($email, $token);
 
         if ($sent) {
-            $this->redirectWithFlash('/admin/invite', 'admin_success', "Invitation sent to $email.");
+            $this->redirectWithFlash(Routes::ADMIN_INVITE, Flash::ADMIN_SUCCESS, "Invitation sent to $email.");
         } else {
-            $this->redirectWithFlash('/admin/invite', 'admin_error', "Invite created but failed to send email to $email. Check mail configuration.");
+            $this->redirectWithFlash(Routes::ADMIN_INVITE, Flash::ADMIN_ERROR, "Invite created but failed to send email to $email. Check mail configuration.");
         }
     }
 }
