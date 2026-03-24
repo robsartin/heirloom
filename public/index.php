@@ -77,6 +77,7 @@ $admin = new AdminController($db, $auth, $settings);
 // Public routes
 $router->get('/sitemap.xml', [$gallery, 'sitemapXml']);
 $router->get('/', [$gallery, 'index']);
+$router->get('/gallery', [$gallery, 'index']);
 $router->get('/painting/{id}', [$gallery, 'show']);
 $router->post('/painting/{id}/interest', [$gallery, 'expressInterest']);
 $router->get('/my-paintings', [$gallery, 'myPaintings']);
