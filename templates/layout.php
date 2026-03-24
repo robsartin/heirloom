@@ -10,12 +10,16 @@
     <meta property="og:image" content="<?= \Heirloom\Template::escape($ogImage ?? '') ?>">
     <meta property="og:type" content="website">
     <?php endif; ?>
-    <link rel="stylesheet" href="/css/style.css?v=2">
+    <link rel="icon" href="/favicon.ico" sizes="any">
+    <link rel="icon" href="/favicon-32x32.png" type="image/png" sizes="32x32">
+    <link rel="icon" href="/favicon-16x16.png" type="image/png" sizes="16x16">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    <link rel="stylesheet" href="/css/style.css?v=3">
 </head>
 <body>
     <nav class="navbar">
         <div class="container nav-container">
-            <a href="/" class="nav-brand"><?= \Heirloom\Template::escape($siteName) ?></a>
+            <a href="/" class="nav-brand"><img src="/logo.png" alt="<?= \Heirloom\Template::escape($siteName) ?>" class="nav-logo"><?= \Heirloom\Template::escape($siteName) ?></a>
             <div class="nav-links">
                 <?php if ($auth && $auth->isLoggedIn()): ?>
                     <?php $user = $auth->user(); ?>
