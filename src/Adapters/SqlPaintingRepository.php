@@ -102,15 +102,6 @@ final class SqlPaintingRepository implements PaintingRepository
         return array_map(fn(array $row) => $row['email'], $rows);
     }
 
-    public function findUserEmailById(int $userId): ?string
-    {
-        $row = $this->db->fetchOne(
-            'SELECT email FROM users WHERE id = :id',
-            [':id' => $userId]
-        );
-        return $row ? $row['email'] : null;
-    }
-
     public function delete(int $paintingId): void
     {
         $this->db->execute('DELETE FROM paintings WHERE id = :id', [':id' => $paintingId]);

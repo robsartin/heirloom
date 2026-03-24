@@ -4,10 +4,12 @@ declare(strict_types=1);
 namespace Heirloom\Controllers;
 
 use Heirloom\Adapters\SqlPaintingRepository;
+use Heirloom\Adapters\SqlUserRepository;
 use Heirloom\Auth;
 use Heirloom\Database;
 use Heirloom\InputValidator;
 use Heirloom\Ports\PaintingRepository;
+use Heirloom\Ports\UserRepository;
 use Heirloom\SiteSettings;
 use Heirloom\Template;
 use Heirloom\Thumbnail;
@@ -22,10 +24,12 @@ class AdminController
     use FlashRedirect;
 
     private PaintingRepository $paintingRepo;
+    private UserRepository $userRepo;
 
-    public function __construct(private Database $db, private Auth $auth, private SiteSettings $settings, ?PaintingRepository $paintingRepo = null)
+    public function __construct(private Database $db, private Auth $auth, private SiteSettings $settings, ?PaintingRepository $paintingRepo = null, ?UserRepository $userRepo = null)
     {
         $this->paintingRepo = $paintingRepo ?? new SqlPaintingRepository($db);
+        $this->userRepo = $userRepo ?? new SqlUserRepository($db);
     }
 
     public function dashboard(): void
@@ -288,7 +292,7 @@ class AdminController
         $userId = $userIdRaw !== '' ? (int) $userIdRaw : null;
         $adminId = $this->auth->userId();
 
-        $useCase = new AwardPaintingUseCase($this->paintingRepo);
+        $useCase = new AwardPaintingUseCase($this->paintingRepo, $this->userRepo);
 
         if ($userId) {
             $result = $useCase->award((int) $id, $userId, $adminId);

@@ -24,8 +24,6 @@ interface PaintingRepository
     /** @return string[] */
     public function getInterestedEmails(int $paintingId, int $excludeUserId = 0): array;
 
-    public function findUserEmailById(int $userId): ?string;
-
     public function delete(int $paintingId): void;
 
     public function update(int $paintingId, string $title, string $description): void;

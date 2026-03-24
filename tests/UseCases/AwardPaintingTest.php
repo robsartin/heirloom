@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Heirloom\Tests\UseCases;
 
 use Heirloom\Adapters\SqlPaintingRepository;
+use Heirloom\Adapters\SqlUserRepository;
 use Heirloom\Database;
 use Heirloom\UseCases\AwardPainting;
 use PDO;
@@ -58,8 +59,9 @@ class AwardPaintingTest extends TestCase
         )");
 
         $this->db = new Database($pdo);
-        $repo = new SqlPaintingRepository($this->db);
-        $this->useCase = new AwardPainting($repo);
+        $paintingRepo = new SqlPaintingRepository($this->db);
+        $userRepo = new SqlUserRepository($this->db);
+        $this->useCase = new AwardPainting($paintingRepo, $userRepo);
     }
 
     public function testAwardSetsAwardedToAndLogs(): void

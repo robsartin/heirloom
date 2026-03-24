@@ -4,10 +4,14 @@ declare(strict_types=1);
 namespace Heirloom\UseCases;
 
 use Heirloom\Ports\PaintingRepository;
+use Heirloom\Ports\UserRepository;
 
 class AwardPainting
 {
-    public function __construct(private PaintingRepository $paintings) {}
+    public function __construct(
+        private PaintingRepository $paintings,
+        private UserRepository $users,
+    ) {}
 
     /**
      * Award a painting to a user.
@@ -19,7 +23,8 @@ class AwardPainting
         $this->paintings->award($paintingId, $userId, $adminId);
 
         $painting = $this->paintings->findById($paintingId);
-        $winnerEmail = $this->paintings->findUserEmailById($userId);
+        $winner = $this->users->findById($userId);
+        $winnerEmail = $winner['email'] ?? null;
         $loserEmails = $this->paintings->getInterestedEmails($paintingId, $userId);
 
         return [
