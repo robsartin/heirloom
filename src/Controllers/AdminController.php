@@ -514,10 +514,67 @@ class AdminController
             }
         }
 
-        $this->settings->setBulk($updates);
-        $_SESSION['admin_success'] = 'Settings saved.';
+        $errors = self::validateSettings($updates);
+
+        if ($errors) {
+            // Only save settings that passed validation
+            $valid = array_diff_key($updates, $errors);
+            if ($valid) {
+                $this->settings->setBulk($valid);
+            }
+            $_SESSION['admin_error'] = implode(' ', array_values($errors));
+        } else {
+            $this->settings->setBulk($updates);
+            $_SESSION['admin_success'] = 'Settings saved.';
+        }
+
         header('Location: /admin/settings');
         exit;
+    }
+
+    /**
+     * Validate setting values. Returns an associative array of setting_key => error message
+     * for any settings that fail validation. An empty array means all valid.
+     *
+     * @param array<string, string> $settings Map of setting_key => value to validate
+     * @return array<string, string> Map of setting_key => error message for invalid settings
+     */
+    public static function validateSettings(array $settings): array
+    {
+        $errors = [];
+
+        $numericKeys = [
+            'magic_link_expiry_minutes',
+            'session_timeout_minutes',
+            'gallery_per_page',
+            'admin_per_page',
+        ];
+
+        $booleanKeys = [
+            'registration_open',
+        ];
+
+        foreach ($settings as $key => $value) {
+            if (in_array($key, $numericKeys, true)) {
+                if (!ctype_digit($value) || (int) $value < 1) {
+                    $errors[$key] = "$key must be a positive integer.";
+                }
+            } elseif (in_array($key, $booleanKeys, true)) {
+                if ($value !== '0' && $value !== '1') {
+                    $errors[$key] = "$key must be '0' or '1'.";
+                }
+            } elseif ($key === 'contact_email') {
+                if ($value !== '' && !filter_var($value, FILTER_VALIDATE_EMAIL)) {
+                    $errors[$key] = 'contact_email must be a valid email or empty.';
+                }
+            } elseif ($key === 'site_name') {
+                if (mb_strlen($value) > 100) {
+                    $errors[$key] = 'site_name must not exceed 100 characters.';
+                }
+            }
+        }
+
+        return $errors;
     }
 
     public function inviteForm(): void
