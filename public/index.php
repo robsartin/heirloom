@@ -30,6 +30,14 @@ set_exception_handler(function (\Throwable $e): void {
 
 session_start();
 
+header('X-Frame-Options: DENY');
+header('X-Content-Type-Options: nosniff');
+header('X-XSS-Protection: 1; mode=block');
+header('Referrer-Policy: strict-origin-when-cross-origin');
+if (!empty($_SERVER['HTTPS'])) {
+    header('Strict-Transport-Security: max-age=31536000; includeSubDomains');
+}
+
 $db = Database::getInstance();
 $settings = new SiteSettings($db);
 Template::setGlobal('siteName', $settings->get('site_name', SiteSettings::DEFAULT_SITE_NAME));
