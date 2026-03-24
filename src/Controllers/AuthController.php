@@ -275,7 +275,7 @@ class AuthController
         $this->auth->requireLogin();
         $address = trim($_POST['shipping_address'] ?? '');
 
-        $lengthError = InputValidator::validateLength($address, 500, 'Shipping address');
+        $lengthError = InputValidator::validateLength($address, InputValidator::MAX_SHIPPING_ADDRESS, 'Shipping address');
         if ($lengthError) {
             $_SESSION['auth_error'] = $lengthError;
             header('Location: /profile');

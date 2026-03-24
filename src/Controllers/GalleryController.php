@@ -147,7 +147,7 @@ class GalleryController
 
         $message = trim($_POST['message'] ?? '');
 
-        $lengthError = InputValidator::validateLength($message, 1000, 'Interest message');
+        $lengthError = InputValidator::validateLength($message, InputValidator::MAX_INTEREST_MESSAGE, 'Interest message');
         if ($lengthError) {
             $_SESSION['gallery_error'] = $lengthError;
             header('Location: /painting/' . $id);

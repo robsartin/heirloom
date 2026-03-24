@@ -121,8 +121,8 @@ class AdminController
         $title = trim($_POST['title'] ?? '');
         $description = trim($_POST['description'] ?? '');
 
-        $titleError = InputValidator::validateLength($title, 255, 'Title');
-        $descError = InputValidator::validateLength($description, 5000, 'Description');
+        $titleError = InputValidator::validateLength($title, InputValidator::MAX_PAINTING_TITLE, 'Title');
+        $descError = InputValidator::validateLength($description, InputValidator::MAX_PAINTING_DESCRIPTION, 'Description');
         if ($titleError || $descError) {
             $_SESSION['upload_error'] = $titleError ?? $descError;
             header('Location: /admin/upload');
@@ -270,8 +270,8 @@ class AdminController
             exit;
         }
 
-        $titleError = InputValidator::validateLength($title, 255, 'Title');
-        $descError = InputValidator::validateLength($description, 5000, 'Description');
+        $titleError = InputValidator::validateLength($title, InputValidator::MAX_PAINTING_TITLE, 'Title');
+        $descError = InputValidator::validateLength($description, InputValidator::MAX_PAINTING_DESCRIPTION, 'Description');
         if ($titleError || $descError) {
             $_SESSION['admin_error'] = $titleError ?? $descError;
             header('Location: /admin/painting/' . $id);
