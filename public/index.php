@@ -15,11 +15,12 @@ use Heirloom\Template;
 use Heirloom\Controllers\GalleryController;
 use Heirloom\Controllers\AuthController;
 use Heirloom\Controllers\AdminController;
+use Heirloom\ErrorHandler;
 
 Config::load(__DIR__ . '/../.env');
 
 set_exception_handler(function (\Throwable $e): void {
-    error_log($e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
+    error_log(ErrorHandler::formatError($e));
     http_response_code(500);
     Template::render('error', [
         'code' => 500,
