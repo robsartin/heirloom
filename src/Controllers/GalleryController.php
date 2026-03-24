@@ -6,6 +6,7 @@ namespace Heirloom\Controllers;
 use Heirloom\Auth;
 use Heirloom\Config;
 use Heirloom\Database;
+use Heirloom\InputValidator;
 use Heirloom\SiteSettings;
 use Heirloom\Template;
 
@@ -145,6 +146,13 @@ class GalleryController
         );
 
         $message = trim($_POST['message'] ?? '');
+
+        $lengthError = InputValidator::validateLength($message, 1000, 'Interest message');
+        if ($lengthError) {
+            $_SESSION['gallery_error'] = $lengthError;
+            header('Location: /painting/' . $id);
+            exit;
+        }
 
         if ($existing) {
             // Toggle off - remove interest

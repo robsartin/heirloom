@@ -6,6 +6,7 @@ namespace Heirloom\Controllers;
 use Heirloom\Auth;
 use Heirloom\Config;
 use Heirloom\Database;
+use Heirloom\InputValidator;
 use Heirloom\RateLimiter;
 use Heirloom\SiteSettings;
 use Heirloom\Template;
@@ -273,6 +274,13 @@ class AuthController
     {
         $this->auth->requireLogin();
         $address = trim($_POST['shipping_address'] ?? '');
+
+        $lengthError = InputValidator::validateLength($address, 500, 'Shipping address');
+        if ($lengthError) {
+            $_SESSION['auth_error'] = $lengthError;
+            header('Location: /profile');
+            exit;
+        }
 
         $this->db->execute(
             'UPDATE users SET shipping_address = :addr WHERE id = :id',
