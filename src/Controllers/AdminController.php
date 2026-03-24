@@ -147,7 +147,12 @@ class AdminController
 
             $tmpName = $_FILES['paintings']['tmp_name'][$i];
             $originalName = $_FILES['paintings']['name'][$i];
-            $mimeType = mime_content_type($tmpName);
+            $imgInfo = @getimagesize($tmpName);
+            if ($imgInfo === false) {
+                $errors[] = "$originalName: not a valid image file.";
+                continue;
+            }
+            $mimeType = $imgInfo['mime'];
 
             if (!in_array($mimeType, $allowed, true)) {
                 $errors[] = "$originalName: not a JPEG or PNG.";
