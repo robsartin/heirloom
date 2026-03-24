@@ -10,7 +10,7 @@
     <meta property="og:image" content="<?= \Heirloom\Template::escape($ogImage ?? '') ?>">
     <meta property="og:type" content="website">
     <?php endif; ?>
-    <link rel="stylesheet" href="/css/style.css?v=1">
+    <link rel="stylesheet" href="/css/style.css?v=2">
 </head>
 <body>
     <nav class="navbar">

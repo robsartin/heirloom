@@ -7,16 +7,24 @@
 }
 
 :root {
-    --bg: #f5f0eb;
-    --surface: #fff;
-    --text: #2c2c2c;
-    --text-muted: #6b6b6b;
-    --accent: #8b5e3c;
-    --accent-hover: #6d4a2f;
-    --border: #ddd5cc;
-    --danger: #c0392b;
-    --success: #27ae60;
-    --radius: 6px;
+    --bg: #FAF6F1;
+    --bg-alt: #F3ECE4;
+    --surface: #FFFFFF;
+    --surface-hover: #FBF8F4;
+    --text: #2D2319;
+    --text-muted: #8C7E72;
+    --text-light: #B5A99B;
+    --accent: #B85C48;
+    --accent-hover: #9C4A38;
+    --accent-light: #E8C4BA;
+    --border: #E5DCD3;
+    --border-light: #F0E9E1;
+    --danger: #C1423F;
+    --danger-light: #FDEAEA;
+    --success: #5B8A5E;
+    --success-light: #EDF5EE;
+    --card-shadow: rgba(45, 35, 25, 0.08);
+    --radius: 8px;
 }
 
 body {
@@ -167,7 +175,7 @@ main {
 }
 
 .painting-card:hover {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 12px var(--card-shadow);
 }
 
 .painting-card a {
@@ -179,7 +187,7 @@ main {
     width: 100%;
     aspect-ratio: 4/3;
     object-fit: contain;
-    background: #f0ece6;
+    background: var(--bg-alt);
     display: block;
 }
 
@@ -227,7 +235,7 @@ main {
     width: 100%;
     max-height: 600px;
     object-fit: contain;
-    background: #f0ece6;
+    background: var(--bg-alt);
     border-radius: var(--radius);
 }
 
@@ -357,7 +365,7 @@ main {
 }
 
 .btn-danger:hover {
-    background: #a93226;
+    background: #A33835;
 }
 
 .btn-success {
@@ -408,15 +416,15 @@ main {
 }
 
 .alert-error {
-    background: #fdeaea;
+    background: var(--danger-light);
     color: var(--danger);
-    border: 1px solid #f5c6cb;
+    border: 1px solid var(--accent-light);
 }
 
 .alert-success {
-    background: #eafaf1;
-    color: #1e8449;
-    border: 1px solid #a9dfbf;
+    background: var(--success-light);
+    color: var(--success);
+    border: 1px solid var(--success);
 }
 
 /* Admin Stats Bar */
@@ -485,7 +493,7 @@ main {
 }
 
 .admin-table th {
-    background: #f5f0eb;
+    background: var(--bg);
     font-size: 0.85rem;
     text-transform: uppercase;
     letter-spacing: 0.03em;
@@ -506,7 +514,7 @@ main {
     height: 45px;
     object-fit: contain;
     border-radius: 3px;
-    background: #f0ece6;
+    background: var(--bg-alt);
 }
 
 .filter-bar {
