@@ -155,9 +155,8 @@ $stmt->execute([':email' => $adminEmail]);
 $existing = $stmt->fetch();
 
 if (!$existing) {
-    $hash = password_hash('foo', PASSWORD_DEFAULT);
-    $stmt = $pdo->prepare('INSERT INTO users (email, name, password_hash, is_admin) VALUES (:email, :name, :hash, 1)');
-    $stmt->execute([':email' => $adminEmail, ':name' => 'Rob Sartin', ':hash' => $hash]);
+    $stmt = $pdo->prepare('INSERT INTO users (email, name, password_hash, is_admin) VALUES (:email, :name, NULL, 1)');
+    $stmt->execute([':email' => $adminEmail, ':name' => 'Rob Sartin']);
     echo "Admin user created: $adminEmail\n";
 } else {
     echo "Admin user already exists.\n";
@@ -168,10 +167,9 @@ $testEmail = 'f@f.com';
 $stmt = $pdo->prepare('SELECT id FROM users WHERE email = :email');
 $stmt->execute([':email' => $testEmail]);
 if (!$stmt->fetch()) {
-    $hash = password_hash('f', PASSWORD_DEFAULT);
-    $stmt = $pdo->prepare('INSERT INTO users (email, name, password_hash) VALUES (:email, :name, :hash)');
-    $stmt->execute([':email' => $testEmail, ':name' => 'Test User', ':hash' => $hash]);
-    echo "Test user created: $testEmail (password: f)\n";
+    $stmt = $pdo->prepare('INSERT INTO users (email, name, password_hash) VALUES (:email, :name, NULL)');
+    $stmt->execute([':email' => $testEmail, ':name' => 'Test User']);
+    echo "Test user created: $testEmail\n";
 } else {
     echo "Test user already exists.\n";
 }
