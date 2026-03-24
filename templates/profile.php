@@ -28,7 +28,7 @@
         <h2 style="margin-bottom:1rem;">Awarded Paintings</h2>
         <?php foreach ($awardedPaintings as $painting): ?>
         <div style="display:flex;gap:1rem;align-items:flex-start;margin-bottom:1.5rem;padding-bottom:1.5rem;border-bottom:1px solid var(--border-color,#eee);">
-            <img src="/uploads/<?= \Heirloom\Template::escape($painting['filename']) ?>"
+            <img src="/paintings/<?= \Heirloom\Template::escape($painting['filename']) ?>"
                  alt="<?= \Heirloom\Template::escape($painting['title']) ?>"
                  style="width:80px;height:80px;object-fit:cover;border-radius:4px;">
             <div>

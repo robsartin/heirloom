@@ -131,7 +131,7 @@ class AdminController
             $this->redirectWithFlash(Routes::ADMIN_UPLOAD, Flash::UPLOAD_ERROR, 'Please select at least one image.');
         }
 
-        $uploadDir = dirname(__DIR__, 2) . '/public/uploads/';
+        $uploadDir = \Heirloom\Paths::paintingsDir();
         $allowed = ['image/jpeg', 'image/png'];
         $uploaded = 0;
         $errors = [];
@@ -356,7 +356,7 @@ class AdminController
         );
 
         if ($painting) {
-            $uploadDir = dirname(__DIR__, 2) . '/public/uploads/';
+            $uploadDir = \Heirloom\Paths::paintingsDir();
             @unlink($uploadDir . $painting['filename']);
             @unlink($uploadDir . Thumbnail::thumbFilename($painting['filename']));
             $this->db->execute('DELETE FROM paintings WHERE id = :id', [':id' => (int) $id]);

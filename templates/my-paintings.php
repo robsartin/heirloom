@@ -14,7 +14,7 @@
         <?php foreach ($awarded as $painting): ?>
         <div style="display:flex;gap:1rem;align-items:flex-start;margin-bottom:1.5rem;padding-bottom:1.5rem;border-bottom:1px solid var(--border-color,#eee);">
             <a href="/painting/<?= (int) $painting['id'] ?>">
-                <img src="/uploads/<?= \Heirloom\Template::escape($painting['filename']) ?>"
+                <img src="/paintings/<?= \Heirloom\Template::escape($painting['filename']) ?>"
                      alt="<?= \Heirloom\Template::escape($painting['title']) ?>"
                      style="width:80px;height:80px;object-fit:cover;border-radius:4px;">
             </a>
@@ -46,7 +46,7 @@
         <?php foreach ($wanted as $painting): ?>
         <div style="display:flex;gap:1rem;align-items:flex-start;margin-bottom:1.5rem;padding-bottom:1.5rem;border-bottom:1px solid var(--border-color,#eee);">
             <a href="/painting/<?= (int) $painting['id'] ?>">
-                <img src="/uploads/<?= \Heirloom\Template::escape($painting['filename']) ?>"
+                <img src="/paintings/<?= \Heirloom\Template::escape($painting['filename']) ?>"
                      alt="<?= \Heirloom\Template::escape($painting['title']) ?>"
                      style="width:80px;height:80px;object-fit:cover;border-radius:4px;">
             </a>
@@ -67,7 +67,7 @@
         <?php foreach ($noLongerAvailable as $painting): ?>
         <div style="display:flex;gap:1rem;align-items:flex-start;margin-bottom:1.5rem;padding-bottom:1.5rem;border-bottom:1px solid var(--border-color,#eee);">
             <a href="/painting/<?= (int) $painting['id'] ?>">
-                <img src="/uploads/<?= \Heirloom\Template::escape($painting['filename']) ?>"
+                <img src="/paintings/<?= \Heirloom\Template::escape($painting['filename']) ?>"
                      alt="<?= \Heirloom\Template::escape($painting['title']) ?>"
                      style="width:80px;height:80px;object-fit:cover;border-radius:4px;opacity:0.6;">
             </a>

@@ -3,7 +3,7 @@
 <div class="painting-detail">
     <div>
         <img class="painting-detail-image"
-             src="/uploads/<?= Template::escape($painting['filename']) ?>"
+             src="/paintings/<?= Template::escape($painting['filename']) ?>"
              alt="<?= Template::escape($painting['title']) ?>">
     </div>
     <div class="painting-detail-info">

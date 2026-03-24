@@ -78,7 +78,7 @@ class Thumbnail
     public static function thumbOrOriginal(string $filename, string $uploadDir = ''): string
     {
         if ($uploadDir === '') {
-            $uploadDir = dirname(__DIR__) . '/public/uploads/';
+            $uploadDir = Paths::paintingsDir();
         }
         $thumb = self::thumbFilename($filename);
         if (file_exists($uploadDir . $thumb)) {

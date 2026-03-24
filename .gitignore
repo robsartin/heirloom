@@ -4,9 +4,9 @@
 # Environment
 .env
 
-# Uploaded images
-/public/uploads/*
-!/public/uploads/.gitkeep
+# Painting images
+/public/paintings/*
+!/public/paintings/.gitkeep
 
 # Database
 /data/
