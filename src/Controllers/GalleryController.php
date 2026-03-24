@@ -16,6 +16,8 @@ use Heirloom\Template;
  */
 class GalleryController
 {
+    use FlashRedirect;
+
     public function __construct(private Database $db, private Auth $auth, private SiteSettings $settings) {}
 
     public function index(): void
@@ -149,9 +151,7 @@ class GalleryController
 
         $lengthError = InputValidator::validateLength($message, 1000, 'Interest message');
         if ($lengthError) {
-            $_SESSION['gallery_error'] = $lengthError;
-            header('Location: /painting/' . $id);
-            exit;
+            $this->redirectWithFlash('/painting/' . $id, 'gallery_error', $lengthError);
         }
 
         if ($existing) {
