@@ -15,6 +15,7 @@ use Heirloom\Template;
 use Heirloom\Controllers\GalleryController;
 use Heirloom\Controllers\AuthController;
 use Heirloom\Controllers\AdminController;
+use Heirloom\Controllers\TemplateVar;
 use Heirloom\ErrorHandler;
 
 Config::load(__DIR__ . '/../.env');
@@ -23,9 +24,9 @@ set_exception_handler(function (\Throwable $e): void {
     error_log(ErrorHandler::formatError($e));
     http_response_code(500);
     Template::render('error', [
-        'code' => 500,
-        'message' => 'An unexpected error occurred. Please try again later.',
-        'noLayout' => true,
+        TemplateVar::CODE =>500,
+        TemplateVar::MESSAGE =>'An unexpected error occurred. Please try again later.',
+        TemplateVar::NO_LAYOUT => true,
     ]);
 });
 
@@ -116,9 +117,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!Csrf::validate($token)) {
         http_response_code(403);
         Template::render('error', [
-            'code' => 403,
-            'message' => 'Invalid or missing CSRF token. Please go back and try again.',
-            'noLayout' => true,
+            TemplateVar::CODE =>403,
+            TemplateVar::MESSAGE =>'Invalid or missing CSRF token. Please go back and try again.',
+            TemplateVar::NO_LAYOUT => true,
         ]);
         exit;
     }

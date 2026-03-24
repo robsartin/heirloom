@@ -23,7 +23,7 @@ class GalleryController
     public function index(): void
     {
         if (!$this->auth->isLoggedIn()) {
-            Template::render('landing', ['auth' => $this->auth]);
+            Template::render('landing', [TemplateVar::AUTH => $this->auth]);
             return;
         }
 
@@ -84,7 +84,7 @@ class GalleryController
             'totalPages' => $totalPages,
             'total' => $total,
             'userInterests' => $userInterests,
-            'auth' => $this->auth,
+            TemplateVar::AUTH => $this->auth,
             'search' => $search,
             'sort' => $sort,
         ]);
@@ -125,7 +125,7 @@ class GalleryController
             'painting' => $painting,
             'hasInterest' => $hasInterest,
             'interestCount' => $interestCount,
-            'auth' => $this->auth,
+            TemplateVar::AUTH => $this->auth,
         ]);
     }
 
@@ -243,7 +243,7 @@ class GalleryController
             'wanted' => $wanted,
             'awarded' => $awarded,
             'noLongerAvailable' => $noLongerAvailable,
-            'auth' => $this->auth,
+            TemplateVar::AUTH => $this->auth,
         ]);
     }
 }

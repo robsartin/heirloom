@@ -34,9 +34,9 @@ class AuthController
             exit;
         }
         Template::render('login', [
-            'error' => $_SESSION[Flash::AUTH_ERROR] ?? null,
-            'success' => $_SESSION[Flash::AUTH_SUCCESS] ?? null,
-            'auth' => $this->auth,
+            TemplateVar::ERROR => $_SESSION[Flash::AUTH_ERROR] ?? null,
+            TemplateVar::SUCCESS => $_SESSION[Flash::AUTH_SUCCESS] ?? null,
+            TemplateVar::AUTH => $this->auth,
         ]);
         unset($_SESSION[Flash::AUTH_ERROR], $_SESSION[Flash::AUTH_SUCCESS]);
     }
@@ -93,16 +93,16 @@ class AuthController
         }
         if (!$this->settings->getBool('registration_open', true)) {
             Template::render('register', [
-                'error' => 'Registration is currently closed.',
-                'auth' => $this->auth,
-                'closed' => true,
+                TemplateVar::ERROR => 'Registration is currently closed.',
+                TemplateVar::AUTH => $this->auth,
+                TemplateVar::CLOSED => true,
             ]);
             return;
         }
         Template::render('register', [
-            'error' => $_SESSION[Flash::AUTH_ERROR] ?? null,
-            'auth' => $this->auth,
-            'closed' => false,
+            TemplateVar::ERROR => $_SESSION[Flash::AUTH_ERROR] ?? null,
+            TemplateVar::AUTH => $this->auth,
+            TemplateVar::CLOSED => false,
         ]);
         unset($_SESSION[Flash::AUTH_ERROR]);
     }
@@ -167,9 +167,9 @@ class AuthController
     {
         $this->auth->requireLogin();
         Template::render('set-password', [
-            'auth' => $this->auth,
-            'error' => $_SESSION[Flash::AUTH_ERROR] ?? null,
-            'success' => $_SESSION[Flash::AUTH_SUCCESS] ?? null,
+            TemplateVar::AUTH => $this->auth,
+            TemplateVar::ERROR => $_SESSION[Flash::AUTH_ERROR] ?? null,
+            TemplateVar::SUCCESS => $_SESSION[Flash::AUTH_SUCCESS] ?? null,
         ]);
         unset($_SESSION[Flash::AUTH_ERROR], $_SESSION[Flash::AUTH_SUCCESS]);
     }
@@ -235,11 +235,11 @@ class AuthController
             [':uid' => $this->auth->userId()]
         );
         Template::render('profile', [
-            'auth' => $this->auth,
+            TemplateVar::AUTH => $this->auth,
             'user' => $user,
             'awardedPaintings' => $awardedPaintings,
-            'success' => $_SESSION[Flash::AUTH_SUCCESS] ?? null,
-            'error' => $_SESSION[Flash::AUTH_ERROR] ?? null,
+            TemplateVar::SUCCESS => $_SESSION[Flash::AUTH_SUCCESS] ?? null,
+            TemplateVar::ERROR => $_SESSION[Flash::AUTH_ERROR] ?? null,
         ]);
         unset($_SESSION[Flash::AUTH_SUCCESS], $_SESSION[Flash::AUTH_ERROR]);
     }

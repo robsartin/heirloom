@@ -93,7 +93,7 @@ class AdminController
             'sort' => $sort,
             'dir' => $dir,
             'stats' => $stats,
-            'auth' => $this->auth,
+            TemplateVar::AUTH => $this->auth,
         ]);
     }
 
@@ -101,9 +101,9 @@ class AdminController
     {
         $this->auth->requireAdmin();
         Template::render('admin/upload', [
-            'auth' => $this->auth,
-            'error' => $_SESSION[Flash::UPLOAD_ERROR] ?? null,
-            'success' => $_SESSION[Flash::UPLOAD_SUCCESS] ?? null,
+            TemplateVar::AUTH => $this->auth,
+            TemplateVar::ERROR => $_SESSION[Flash::UPLOAD_ERROR] ?? null,
+            TemplateVar::SUCCESS => $_SESSION[Flash::UPLOAD_SUCCESS] ?? null,
         ]);
         unset($_SESSION[Flash::UPLOAD_ERROR], $_SESSION[Flash::UPLOAD_SUCCESS]);
     }
@@ -242,9 +242,9 @@ class AdminController
             'interests' => $interests,
             'awardedUser' => $awardedUser,
             'awardLog' => $awardLog,
-            'auth' => $this->auth,
-            'success' => $_SESSION[Flash::ADMIN_SUCCESS] ?? null,
-            'error' => $_SESSION[Flash::ADMIN_ERROR] ?? null,
+            TemplateVar::AUTH => $this->auth,
+            TemplateVar::SUCCESS => $_SESSION[Flash::ADMIN_SUCCESS] ?? null,
+            TemplateVar::ERROR => $_SESSION[Flash::ADMIN_ERROR] ?? null,
         ]);
         unset($_SESSION[Flash::ADMIN_SUCCESS], $_SESSION[Flash::ADMIN_ERROR]);
     }
@@ -495,9 +495,9 @@ class AdminController
 
         Template::render('admin/settings', [
             'settings' => $allSettings,
-            'auth' => $this->auth,
-            'success' => $_SESSION[Flash::ADMIN_SUCCESS] ?? null,
-            'error' => $_SESSION[Flash::ADMIN_ERROR] ?? null,
+            TemplateVar::AUTH => $this->auth,
+            TemplateVar::SUCCESS => $_SESSION[Flash::ADMIN_SUCCESS] ?? null,
+            TemplateVar::ERROR => $_SESSION[Flash::ADMIN_ERROR] ?? null,
         ]);
         unset($_SESSION[Flash::ADMIN_SUCCESS], $_SESSION[Flash::ADMIN_ERROR]);
     }
@@ -579,9 +579,9 @@ class AdminController
     {
         $this->auth->requireAdmin();
         Template::render('admin/invite', [
-            'auth' => $this->auth,
-            'success' => $_SESSION[Flash::ADMIN_SUCCESS] ?? null,
-            'error' => $_SESSION[Flash::ADMIN_ERROR] ?? null,
+            TemplateVar::AUTH => $this->auth,
+            TemplateVar::SUCCESS => $_SESSION[Flash::ADMIN_SUCCESS] ?? null,
+            TemplateVar::ERROR => $_SESSION[Flash::ADMIN_ERROR] ?? null,
         ]);
         unset($_SESSION[Flash::ADMIN_SUCCESS], $_SESSION[Flash::ADMIN_ERROR]);
     }
