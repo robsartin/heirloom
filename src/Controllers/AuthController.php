@@ -191,14 +191,46 @@ class AuthController
         unset($_SESSION['auth_error'], $_SESSION['auth_success']);
     }
 
+    /**
+     * Validate a password against complexity requirements.
+     *
+     * @return string|null Error message, or null if the password is acceptable.
+     */
+    public static function validatePassword(string $password): ?string
+    {
+        if (strlen($password) < 12) {
+            return 'Password must be at least 12 characters.';
+        }
+        if (!preg_match('/[A-Z]/', $password)) {
+            return 'Password must contain at least one uppercase letter.';
+        }
+        if (!preg_match('/[a-z]/', $password)) {
+            return 'Password must contain at least one lowercase letter.';
+        }
+        if (!preg_match('/[0-9]/', $password)) {
+            return 'Password must contain at least one number.';
+        }
+        return null;
+    }
+
     public function setPassword(): void
     {
         $this->auth->requireLogin();
+
+        $identifier = 'password_change_' . $this->auth->userId();
+        if (!$this->rateLimiter->isAllowed($identifier)) {
+            $_SESSION['auth_error'] = 'Too many attempts. Please try again in 15 minutes.';
+            header('Location: /set-password');
+            exit;
+        }
+        $this->rateLimiter->record($identifier);
+
         $password = $_POST['password'] ?? '';
         $confirm = $_POST['password_confirm'] ?? '';
 
-        if (strlen($password) < 8) {
-            $_SESSION['auth_error'] = 'Password must be at least 8 characters.';
+        $validationError = self::validatePassword($password);
+        if ($validationError !== null) {
+            $_SESSION['auth_error'] = $validationError;
             header('Location: /set-password');
             exit;
         }
