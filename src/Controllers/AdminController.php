@@ -4,13 +4,16 @@ declare(strict_types=1);
 namespace Heirloom\Controllers;
 
 use Heirloom\Adapters\SqlPaintingRepository;
+use Heirloom\Adapters\SqlUserRepository;
 use Heirloom\Auth;
 use Heirloom\Database;
 use Heirloom\InputValidator;
 use Heirloom\Ports\PaintingRepository;
+use Heirloom\Ports\UserRepository;
 use Heirloom\SiteSettings;
 use Heirloom\Template;
 use Heirloom\Thumbnail;
+use Heirloom\UseCases\AwardPainting as AwardPaintingUseCase;
 
 /**
  * Admin-only controller for the dashboard, painting management (upload, edit, award, delete),
@@ -21,10 +24,12 @@ class AdminController
     use FlashRedirect;
 
     private PaintingRepository $paintingRepo;
+    private UserRepository $userRepo;
 
-    public function __construct(private Database $db, private Auth $auth, private SiteSettings $settings, ?PaintingRepository $paintingRepo = null)
+    public function __construct(private Database $db, private Auth $auth, private SiteSettings $settings, ?PaintingRepository $paintingRepo = null, ?UserRepository $userRepo = null)
     {
         $this->paintingRepo = $paintingRepo ?? new SqlPaintingRepository($db);
+        $this->userRepo = $userRepo ?? new SqlUserRepository($db);
     }
 
     public function dashboard(): void
@@ -287,24 +292,19 @@ class AdminController
         $userId = $userIdRaw !== '' ? (int) $userIdRaw : null;
         $adminId = $this->auth->userId();
 
+        $useCase = new AwardPaintingUseCase($this->paintingRepo, $this->userRepo);
+
         if ($userId) {
-            $this->paintingRepo->award((int) $id, $userId, $adminId);
+            $result = $useCase->award((int) $id, $userId, $adminId);
 
-            $recipient = $this->db->fetchOne(
-                'SELECT email FROM users WHERE id = :id',
-                [':id' => $userId]
-            );
-            $painting = $this->paintingRepo->findById((int) $id);
-            if ($recipient && $painting) {
-                $this->auth->sendAwardNotification($recipient['email'], $painting['title']);
-
-                $loserEmails = $this->paintingRepo->getInterestedEmails((int) $id, $userId);
-                $this->auth->sendLoserNotifications($loserEmails, $painting['title']);
+            if ($result['winner_email'] && $result['painting_title']) {
+                $this->auth->sendAwardNotification($result['winner_email'], $result['painting_title']);
+                $this->auth->sendLoserNotifications($result['loser_emails'], $result['painting_title']);
             }
 
             $this->setFlash(Flash::ADMIN_SUCCESS, 'Painting awarded!');
         } else {
-            $this->paintingRepo->unassign((int) $id, $adminId);
+            $useCase->unassign((int) $id, $adminId);
             $this->setFlash(Flash::ADMIN_SUCCESS, 'Painting unassigned.');
         }
 
