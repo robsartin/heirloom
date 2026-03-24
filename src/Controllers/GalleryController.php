@@ -119,7 +119,7 @@ class GalleryController
 
         Template::setGlobal('ogTitle', $painting['title']);
         Template::setGlobal('ogDescription', $painting['description'] ?? '');
-        Template::setGlobal('ogImage', Config::get('APP_URL') . '/uploads/' . $painting['filename']);
+        Template::setGlobal('ogImage', Config::get('APP_URL') . \Heirloom\Paths::PAINTINGS_URL . $painting['filename']);
 
         Template::render('painting', [
             'painting' => $painting,

@@ -72,7 +72,7 @@ $sortIndicator = function (string $col) use ($sort, $dir): string {
         <tbody>
             <?php foreach ($paintings as $p): ?>
                 <tr>
-                    <td><img src="/uploads/<?= Template::escape($p['filename']) ?>" alt=""></td>
+                    <td><img src="/paintings/<?= Template::escape($p['filename']) ?>" alt=""></td>
                     <td><?= Template::escape($p['title']) ?></td>
                     <td><?= $p['interest_count'] ?></td>
                     <td style="font-size:0.8rem;color:var(--text-muted)"><?= $p['last_interest_at'] ? date('M j, g:ia', strtotime($p['last_interest_at'])) : '&mdash;' ?></td>
