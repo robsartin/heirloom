@@ -22,9 +22,13 @@ class AuthController
 
     private RateLimiter $rateLimiter;
 
-    public function __construct(private Database $db, private Auth $auth, private SiteSettings $settings)
-    {
-        $this->rateLimiter = new RateLimiter($db);
+    public function __construct(
+        private Database $db,
+        private Auth $auth,
+        private SiteSettings $settings,
+        ?RateLimiter $rateLimiter = null,
+    ) {
+        $this->rateLimiter = $rateLimiter ?? new RateLimiter($db);
     }
 
     public function loginForm(): void

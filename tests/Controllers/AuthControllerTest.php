@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Heirloom\Tests\Controllers;
 
 use Heirloom\Auth;
+use Heirloom\Controllers\AuthController;
 use Heirloom\Database;
 use Heirloom\RateLimiter;
 use Heirloom\SiteSettings;
@@ -315,6 +316,34 @@ class AuthControllerTest extends TestCase
     public function testRegistrationOpenByDefault(): void
     {
         $this->assertTrue($this->settings->getBool('registration_open', true));
+    }
+
+    // ---------------------------------------------------------------
+    // Dependency injection: RateLimiter
+    // ---------------------------------------------------------------
+
+    public function testAuthControllerAcceptsInjectedRateLimiter(): void
+    {
+        $auth = new Auth($this->db);
+        $rateLimiter = new RateLimiter($this->db, 3, 10);
+
+        // The constructor should accept an optional RateLimiter parameter
+        $controller = new AuthController($this->db, $auth, $this->settings, $rateLimiter);
+
+        // Use reflection to verify the injected RateLimiter is used
+        $ref = new \ReflectionProperty($controller, 'rateLimiter');
+        $this->assertSame($rateLimiter, $ref->getValue($controller));
+    }
+
+    public function testAuthControllerCreatesRateLimiterWhenNotInjected(): void
+    {
+        $auth = new Auth($this->db);
+
+        // When no RateLimiter is passed, the constructor should create one
+        $controller = new AuthController($this->db, $auth, $this->settings);
+
+        $ref = new \ReflectionProperty($controller, 'rateLimiter');
+        $this->assertInstanceOf(RateLimiter::class, $ref->getValue($controller));
     }
 
     // ---------------------------------------------------------------
