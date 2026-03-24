@@ -100,7 +100,11 @@ class GalleryController
         );
         if (!$painting) {
             http_response_code(404);
-            echo '<h1>Painting not found</h1>';
+            Template::render('error', [
+                'code' => 404,
+                'message' => 'Painting not found.',
+                TemplateVar::AUTH => $this->auth,
+            ]);
             return;
         }
 

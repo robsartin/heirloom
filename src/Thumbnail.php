@@ -55,8 +55,7 @@ class Thumbnail
             default => false,
         };
 
-        imagedestroy($source);
-        imagedestroy($thumb);
+        unset($source, $thumb);
 
         return $result;
     }

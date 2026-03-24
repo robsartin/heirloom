@@ -32,7 +32,7 @@ class ThumbnailTest extends TestCase
 
         $img = imagecreatetruecolor(1200, 800);
         imagejpeg($img, $source);
-        imagedestroy($img);
+        unset($img);
 
         $result = Thumbnail::generateThumbnail($source, $dest, 400);
 
@@ -52,7 +52,7 @@ class ThumbnailTest extends TestCase
         // 1600x800 => aspect ratio 2:1
         $img = imagecreatetruecolor(1600, 800);
         imagejpeg($img, $source);
-        imagedestroy($img);
+        unset($img);
 
         Thumbnail::generateThumbnail($source, $dest, 400);
 
@@ -68,7 +68,7 @@ class ThumbnailTest extends TestCase
 
         $img = imagecreatetruecolor(1000, 500);
         imagepng($img, $source);
-        imagedestroy($img);
+        unset($img);
 
         $result = Thumbnail::generateThumbnail($source, $dest, 400);
 
@@ -88,7 +88,7 @@ class ThumbnailTest extends TestCase
 
         $img = imagecreatetruecolor(800, 600);
         imagejpeg($img, $source);
-        imagedestroy($img);
+        unset($img);
 
         Thumbnail::generateThumbnail($source, $dest, 400);
 
@@ -115,7 +115,7 @@ class ThumbnailTest extends TestCase
 
         $img = imagecreatetruecolor(200, 150);
         imagejpeg($img, $source);
-        imagedestroy($img);
+        unset($img);
 
         Thumbnail::generateThumbnail($source, $dest, 400);
 
