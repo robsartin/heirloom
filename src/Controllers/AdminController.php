@@ -11,6 +11,7 @@ use Heirloom\Ports\PaintingRepository;
 use Heirloom\SiteSettings;
 use Heirloom\Template;
 use Heirloom\Thumbnail;
+use Heirloom\UseCases\AwardPainting as AwardPaintingUseCase;
 
 /**
  * Admin-only controller for the dashboard, painting management (upload, edit, award, delete),
@@ -287,24 +288,19 @@ class AdminController
         $userId = $userIdRaw !== '' ? (int) $userIdRaw : null;
         $adminId = $this->auth->userId();
 
+        $useCase = new AwardPaintingUseCase($this->paintingRepo);
+
         if ($userId) {
-            $this->paintingRepo->award((int) $id, $userId, $adminId);
+            $result = $useCase->award((int) $id, $userId, $adminId);
 
-            $recipient = $this->db->fetchOne(
-                'SELECT email FROM users WHERE id = :id',
-                [':id' => $userId]
-            );
-            $painting = $this->paintingRepo->findById((int) $id);
-            if ($recipient && $painting) {
-                $this->auth->sendAwardNotification($recipient['email'], $painting['title']);
-
-                $loserEmails = $this->paintingRepo->getInterestedEmails((int) $id, $userId);
-                $this->auth->sendLoserNotifications($loserEmails, $painting['title']);
+            if ($result['winner_email'] && $result['painting_title']) {
+                $this->auth->sendAwardNotification($result['winner_email'], $result['painting_title']);
+                $this->auth->sendLoserNotifications($result['loser_emails'], $result['painting_title']);
             }
 
             $this->setFlash(Flash::ADMIN_SUCCESS, 'Painting awarded!');
         } else {
-            $this->paintingRepo->unassign((int) $id, $adminId);
+            $useCase->unassign((int) $id, $adminId);
             $this->setFlash(Flash::ADMIN_SUCCESS, 'Painting unassigned.');
         }
 

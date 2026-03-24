@@ -7,10 +7,10 @@ use Heirloom\Adapters\SqlPaintingRepository;
 use Heirloom\Auth;
 use Heirloom\Config;
 use Heirloom\Database;
-use Heirloom\InputValidator;
 use Heirloom\Ports\PaintingRepository;
 use Heirloom\SiteSettings;
 use Heirloom\Template;
+use Heirloom\UseCases\ExpressInterest as ExpressInterestUseCase;
 
 /**
  * Public gallery controller: lists available paintings with search/sort/pagination,
@@ -135,26 +135,18 @@ class GalleryController
     {
         $this->auth->requireLogin();
 
-        $painting = $this->paintingRepo->findAvailableById((int) $id);
-        if (!$painting) {
+        $message = trim($_POST['message'] ?? '');
+
+        $useCase = new ExpressInterestUseCase($this->paintingRepo);
+        $result = $useCase->execute((int) $id, $this->auth->userId(), $message);
+
+        if ($result === null) {
             header('Location: /');
             exit;
         }
 
-        $existing = $this->paintingRepo->hasInterest((int) $id, $this->auth->userId());
-
-        $message = trim($_POST['message'] ?? '');
-
-        $lengthError = InputValidator::validateLength($message, InputValidator::MAX_INTEREST_MESSAGE, 'Interest message');
-        if ($lengthError) {
-            $this->redirectWithFlash(Routes::painting($id), Flash::GALLERY_ERROR, $lengthError);
-        }
-
-        if ($existing) {
-            // Toggle off - remove interest
-            $this->paintingRepo->removeInterest((int) $id, $this->auth->userId());
-        } else {
-            $this->paintingRepo->addInterest((int) $id, $this->auth->userId(), $message);
+        if (isset($result['error'])) {
+            $this->redirectWithFlash(Routes::painting($id), Flash::GALLERY_ERROR, $result['error']);
         }
 
         $redirect = $_POST['redirect'] ?? '/painting/' . $id;
