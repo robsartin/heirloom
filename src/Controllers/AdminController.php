@@ -5,6 +5,7 @@ namespace Heirloom\Controllers;
 
 use Heirloom\Auth;
 use Heirloom\Database;
+use Heirloom\InputValidator;
 use Heirloom\SiteSettings;
 use Heirloom\Template;
 use Heirloom\Thumbnail;
@@ -119,6 +120,14 @@ class AdminController
 
         $title = trim($_POST['title'] ?? '');
         $description = trim($_POST['description'] ?? '');
+
+        $titleError = InputValidator::validateLength($title, 255, 'Title');
+        $descError = InputValidator::validateLength($description, 5000, 'Description');
+        if ($titleError || $descError) {
+            $_SESSION['upload_error'] = $titleError ?? $descError;
+            header('Location: /admin/upload');
+            exit;
+        }
 
         if (empty($_FILES['paintings']) || !is_array($_FILES['paintings']['name'])) {
             $_SESSION['upload_error'] = 'Please select at least one image.';
@@ -252,6 +261,14 @@ class AdminController
 
         if ($title === '') {
             $_SESSION['admin_error'] = 'Title cannot be empty.';
+            header('Location: /admin/painting/' . $id);
+            exit;
+        }
+
+        $titleError = InputValidator::validateLength($title, 255, 'Title');
+        $descError = InputValidator::validateLength($description, 5000, 'Description');
+        if ($titleError || $descError) {
+            $_SESSION['admin_error'] = $titleError ?? $descError;
             header('Location: /admin/painting/' . $id);
             exit;
         }
