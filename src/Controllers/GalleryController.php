@@ -3,10 +3,12 @@ declare(strict_types=1);
 
 namespace Heirloom\Controllers;
 
+use Heirloom\Adapters\SqlPaintingRepository;
 use Heirloom\Auth;
 use Heirloom\Config;
 use Heirloom\Database;
 use Heirloom\InputValidator;
+use Heirloom\Ports\PaintingRepository;
 use Heirloom\SiteSettings;
 use Heirloom\Template;
 
@@ -18,7 +20,12 @@ class GalleryController
 {
     use FlashRedirect;
 
-    public function __construct(private Database $db, private Auth $auth, private SiteSettings $settings) {}
+    private PaintingRepository $paintingRepo;
+
+    public function __construct(private Database $db, private Auth $auth, private SiteSettings $settings, ?PaintingRepository $paintingRepo = null)
+    {
+        $this->paintingRepo = $paintingRepo ?? new SqlPaintingRepository($db);
+    }
 
     public function index(): void
     {
@@ -94,10 +101,7 @@ class GalleryController
     {
         $this->auth->requireLogin();
 
-        $painting = $this->db->fetchOne(
-            'SELECT * FROM paintings WHERE id = :id',
-            [':id' => (int) $id]
-        );
+        $painting = $this->paintingRepo->findById((int) $id);
         if (!$painting) {
             http_response_code(404);
             Template::render('error', [
@@ -110,16 +114,10 @@ class GalleryController
 
         $hasInterest = false;
         if ($this->auth->isLoggedIn()) {
-            $hasInterest = (bool) $this->db->fetchOne(
-                'SELECT 1 FROM interests WHERE painting_id = :pid AND user_id = :uid',
-                [':pid' => (int) $id, ':uid' => $this->auth->userId()]
-            );
+            $hasInterest = $this->paintingRepo->hasInterest((int) $id, $this->auth->userId());
         }
 
-        $interestCount = (int) $this->db->scalar(
-            'SELECT COUNT(*) FROM interests WHERE painting_id = :pid',
-            [':pid' => (int) $id]
-        );
+        $interestCount = $this->paintingRepo->countInterests((int) $id);
 
         Template::setGlobal('ogTitle', $painting['title']);
         Template::setGlobal('ogDescription', $painting['description'] ?? '');
@@ -137,19 +135,13 @@ class GalleryController
     {
         $this->auth->requireLogin();
 
-        $painting = $this->db->fetchOne(
-            'SELECT * FROM paintings WHERE id = :id AND awarded_to IS NULL',
-            [':id' => (int) $id]
-        );
+        $painting = $this->paintingRepo->findAvailableById((int) $id);
         if (!$painting) {
             header('Location: /');
             exit;
         }
 
-        $existing = $this->db->fetchOne(
-            'SELECT 1 FROM interests WHERE painting_id = :pid AND user_id = :uid',
-            [':pid' => (int) $id, ':uid' => $this->auth->userId()]
-        );
+        $existing = $this->paintingRepo->hasInterest((int) $id, $this->auth->userId());
 
         $message = trim($_POST['message'] ?? '');
 
@@ -160,15 +152,9 @@ class GalleryController
 
         if ($existing) {
             // Toggle off - remove interest
-            $this->db->execute(
-                'DELETE FROM interests WHERE painting_id = :pid AND user_id = :uid',
-                [':pid' => (int) $id, ':uid' => $this->auth->userId()]
-            );
+            $this->paintingRepo->removeInterest((int) $id, $this->auth->userId());
         } else {
-            $this->db->execute(
-                'INSERT INTO interests (painting_id, user_id, message) VALUES (:pid, :uid, :msg)',
-                [':pid' => (int) $id, ':uid' => $this->auth->userId(), ':msg' => $message]
-            );
+            $this->paintingRepo->addInterest((int) $id, $this->auth->userId(), $message);
         }
 
         $redirect = $_POST['redirect'] ?? '/painting/' . $id;

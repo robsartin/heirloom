@@ -12,6 +12,7 @@ use Heirloom\LogMailer;
 use Heirloom\SmtpMailer;
 use Heirloom\SiteSettings;
 use Heirloom\Template;
+use Heirloom\Adapters\SqlPaintingRepository;
 use Heirloom\Controllers\GalleryController;
 use Heirloom\Controllers\AuthController;
 use Heirloom\Controllers\AdminController;
@@ -70,9 +71,10 @@ $auth->touchActivity();
 
 $router = new Router();
 
-$gallery = new GalleryController($db, $auth, $settings);
+$paintingRepo = new SqlPaintingRepository($db);
+$gallery = new GalleryController($db, $auth, $settings, $paintingRepo);
 $authCtrl = new AuthController($db, $auth, $settings);
-$admin = new AdminController($db, $auth, $settings);
+$admin = new AdminController($db, $auth, $settings, $paintingRepo);
 
 // Public routes
 $router->get('/sitemap.xml', [$gallery, 'sitemapXml']);
