@@ -458,7 +458,6 @@ class AuthTest extends TestCase
     {
         // Use reflection to test the private method directly
         $reflection = new \ReflectionMethod(Auth::class, 'magicLinkExpiryMinutes');
-        $reflection->setAccessible(true);
 
         // Without settings, default should be int 60
         $result = $reflection->invoke($this->auth);
@@ -507,7 +506,6 @@ class AuthTest extends TestCase
         $auth->setSettings($settings);
 
         $reflection = new \ReflectionMethod(Auth::class, 'magicLinkExpiryMinutes');
-        $reflection->setAccessible(true);
 
         $result = $reflection->invoke($auth);
         $this->assertIsInt($result);
@@ -520,7 +518,6 @@ class AuthTest extends TestCase
         // The key assertion: magicLinkExpiryMinutes returns int, so the
         // interpolated value in the SQL query is always a safe integer.
         $reflection = new \ReflectionMethod(Auth::class, 'magicLinkExpiryMinutes');
-        $reflection->setAccessible(true);
 
         $result = $reflection->invoke($this->auth);
         // Must be int — this guarantees it's safe for SQL interpolation
