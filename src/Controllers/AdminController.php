@@ -3,9 +3,11 @@ declare(strict_types=1);
 
 namespace Heirloom\Controllers;
 
+use Heirloom\Adapters\SqlPaintingRepository;
 use Heirloom\Auth;
 use Heirloom\Database;
 use Heirloom\InputValidator;
+use Heirloom\Ports\PaintingRepository;
 use Heirloom\SiteSettings;
 use Heirloom\Template;
 use Heirloom\Thumbnail;
@@ -18,7 +20,12 @@ class AdminController
 {
     use FlashRedirect;
 
-    public function __construct(private Database $db, private Auth $auth, private SiteSettings $settings) {}
+    private PaintingRepository $paintingRepo;
+
+    public function __construct(private Database $db, private Auth $auth, private SiteSettings $settings, ?PaintingRepository $paintingRepo = null)
+    {
+        $this->paintingRepo = $paintingRepo ?? new SqlPaintingRepository($db);
+    }
 
     public function dashboard(): void
     {
@@ -201,10 +208,7 @@ class AdminController
     {
         $this->auth->requireAdmin();
 
-        $painting = $this->db->fetchOne(
-            'SELECT * FROM paintings WHERE id = :id',
-            [':id' => (int) $id]
-        );
+        $painting = $this->paintingRepo->findById((int) $id);
         if (!$painting) {
             http_response_code(404);
             Template::render('error', [
@@ -270,10 +274,7 @@ class AdminController
             $this->redirectWithFlash(Routes::adminPainting($id), Flash::ADMIN_ERROR, $titleError ?? $descError);
         }
 
-        $this->db->execute(
-            'UPDATE paintings SET title = :title, description = :desc WHERE id = :id',
-            [':title' => $title, ':desc' => $description, ':id' => (int) $id]
-        );
+        $this->paintingRepo->update((int) $id, $title, $description);
 
         $this->redirectWithFlash(Routes::adminPainting($id), Flash::ADMIN_SUCCESS, 'Painting updated.');
     }
@@ -287,49 +288,23 @@ class AdminController
         $adminId = $this->auth->userId();
 
         if ($userId) {
-            $this->db->execute(
-                'UPDATE paintings SET awarded_to = :uid, awarded_at = NOW() WHERE id = :id',
-                [':uid' => $userId, ':id' => (int) $id]
-            );
-            $this->db->execute(
-                'INSERT INTO award_log (painting_id, user_id, awarded_by, action) VALUES (:pid, :uid, :aid, :action)',
-                [':pid' => (int) $id, ':uid' => $userId, ':aid' => $adminId, ':action' => 'awarded']
-            );
+            $this->paintingRepo->award((int) $id, $userId, $adminId);
 
             $recipient = $this->db->fetchOne(
                 'SELECT email FROM users WHERE id = :id',
                 [':id' => $userId]
             );
-            $painting = $this->db->fetchOne(
-                'SELECT title FROM paintings WHERE id = :id',
-                [':id' => (int) $id]
-            );
+            $painting = $this->paintingRepo->findById((int) $id);
             if ($recipient && $painting) {
                 $this->auth->sendAwardNotification($recipient['email'], $painting['title']);
 
-                $losers = $this->db->fetchAll(
-                    'SELECT u.email FROM interests i
-                     JOIN users u ON u.id = i.user_id
-                     WHERE i.painting_id = :pid AND i.user_id != :uid',
-                    [':pid' => (int) $id, ':uid' => $userId]
-                );
-                $loserEmails = array_map(fn(array $row) => $row['email'], $losers);
+                $loserEmails = $this->paintingRepo->getInterestedEmails((int) $id, $userId);
                 $this->auth->sendLoserNotifications($loserEmails, $painting['title']);
             }
 
             $this->setFlash(Flash::ADMIN_SUCCESS, 'Painting awarded!');
         } else {
-            $painting = $this->db->fetchOne('SELECT awarded_to FROM paintings WHERE id = :id', [':id' => (int) $id]);
-            if ($painting && $painting['awarded_to']) {
-                $this->db->execute(
-                    'INSERT INTO award_log (painting_id, user_id, awarded_by, action) VALUES (:pid, :uid, :aid, :action)',
-                    [':pid' => (int) $id, ':uid' => $painting['awarded_to'], ':aid' => $adminId, ':action' => 'unassigned']
-                );
-            }
-            $this->db->execute(
-                'UPDATE paintings SET awarded_to = NULL, awarded_at = NULL, tracking_number = NULL WHERE id = :id',
-                [':id' => (int) $id]
-            );
+            $this->paintingRepo->unassign((int) $id, $adminId);
             $this->setFlash(Flash::ADMIN_SUCCESS, 'Painting unassigned.');
         }
 
@@ -354,16 +329,13 @@ class AdminController
     {
         $this->auth->requireAdmin();
 
-        $painting = $this->db->fetchOne(
-            'SELECT filename FROM paintings WHERE id = :id',
-            [':id' => (int) $id]
-        );
+        $painting = $this->paintingRepo->findById((int) $id);
 
         if ($painting) {
             $uploadDir = \Heirloom\Paths::paintingsDir();
             @unlink($uploadDir . $painting['filename']);
             @unlink($uploadDir . Thumbnail::thumbFilename($painting['filename']));
-            $this->db->execute('DELETE FROM paintings WHERE id = :id', [':id' => (int) $id]);
+            $this->paintingRepo->delete((int) $id);
         }
 
         header('Location: ' . Routes::ADMIN);
