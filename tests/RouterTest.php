@@ -148,4 +148,18 @@ class RouterTest extends TestCase
         $this->router->dispatch('GET', '/test');
         $this->assertTrue($obj->called);
     }
+
+    public function testGalleryRouteMatchesIndex(): void
+    {
+        $called = false;
+        $handler = function () use (&$called) {
+            $called = true;
+        };
+
+        $this->router->get('/', $handler);
+        $this->router->get('/gallery', $handler);
+
+        $this->router->dispatch('GET', '/gallery');
+        $this->assertTrue($called, '/gallery should route to the gallery handler');
+    }
 }
